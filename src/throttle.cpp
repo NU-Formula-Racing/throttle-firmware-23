@@ -17,7 +17,7 @@ Throttle::Throttle()
  * 
  * @return float 
  */
-float Throttle::ReadAccelerometerPress()
+float Throttle::ReadAccelerometerPress() // Study input and output, 0x400 as temp CAN address
 {
     // Throttle constants
 

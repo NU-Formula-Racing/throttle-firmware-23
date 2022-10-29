@@ -5,7 +5,7 @@
 class Throttle
 {
     public:
-        // Include Constants???
+        // Need to include constants
         /*
         static constexpr int throttleSensorPin = 2;
         */
