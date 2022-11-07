@@ -22,30 +22,19 @@ Throttle throttle;
 // Structure for handling timers
 VirtualTimerGroup read_timer;
 
-// TX CAN Messages (need to modify 'CANTemplateConvertFloat' and 'is_signed')
-// TEMP: NEED TO CHANGE!!!
-CANSignal<float, 0, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(0), false> accelerator_press_signal{}; 
-CANSignal<float, 16, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(-40), false> throttle_limit_signal{}; 
-CANTXMessage<2> tx_message{can_bus, 0x400, 4, 100, read_timer, accelerator_press_signal, throttle_limit_signal};
+// TX CAN Signal
+CANSignal<uint8_t, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> cur_throttle_signal{};
 
-// void ReadAccelerometerPress() {
-// }
+// TX CAN Message (Might need to edit transmit period (currently 100))
+CANTXMessage<1> tx_message{can_bus, 0x300, 1, 100, read_timer, cur_throttle_signal};
 
-// bool Throttle::arePotentiometersCorrect() {
-
-// };
-
-// bool Throttle::isbreakPedalPlausible() {
-
-// };
-
-// void Throttle::updateThrottleLimit() {
-
-// };
+void ReadAcceleratorPress() {
+	cur_throttle_signal = throttle.ReadAcceleratorPress();
+};
 
 void setup() {
 	#ifdef SERIAL_DEBUG
-	//Initialize serial output 
+	// Initialize serial output 
 	Serial.begin(115200);
 	#endif
 	
@@ -61,8 +50,8 @@ void setup() {
 
 	/*
 	//Initialize our timer(s)
-
-
+	read_timer.addTimer(100, ReadAccelerometerPress);
+	read_timer.addTimer(100, updateThrottleLimit); // Global variable that constantly needs to be changed
 	*/
 }
 
