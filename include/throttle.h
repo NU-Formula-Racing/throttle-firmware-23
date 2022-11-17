@@ -12,7 +12,7 @@ class Throttle
         Throttle();
         // Reads how much the accelerometer is being pressed (a percentage
         // from 0 to 100)
-        float ReadAcceleratorPress();
+        uint16_t ReadAcceleratorPress();
 
         // Returns true if the two potentiometers on the acceleration pedal
         // agree with each other
@@ -25,10 +25,12 @@ class Throttle
         void updateBrakePosition();
 
     private:
+        //// Might not need all of these private fields
+
         long brake_position;
         // Both potentiometer voltages must be within a threshold
         long left_accelerometer_position;
         long right_accelerometer_position;
         // Will be communicated to the CAN bus
-        long throttle_limit;
+        uint16_t cur_throttle_signal;
 };

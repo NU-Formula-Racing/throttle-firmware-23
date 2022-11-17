@@ -26,7 +26,7 @@ VirtualTimerGroup read_timer;
 CANSignal<uint8_t, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> cur_throttle_signal{};
 
 // TX CAN Message (Might need to edit transmit period (currently 100))
-CANTXMessage<1> tx_message{can_bus, 0x300, 1, 100, read_timer, cur_throttle_signal};
+// CANTXMessage<1> tx_message{can_bus, 0x300, 1, 100, read_timer, cur_throttle_signal};
 
 void ReadAcceleratorPress() {
 	cur_throttle_signal = throttle.ReadAcceleratorPress();
@@ -35,24 +35,14 @@ void ReadAcceleratorPress() {
 void setup() {
 	#ifdef SERIAL_DEBUG
 	// Initialize serial output 
-	Serial.begin(115200);
+	Serial.begin(9600); // Baud rate (Can transfer max of 9600 bits/second)
 	#endif
-	
-	/*
-	// This only works on ESP32, will crash on compile for Teensy
-	// This makes us trigger reading wheel speed in an interrupt
-	// JUST FOR REFERENCE (currently based off daqWheel code)
-	attachInterrupt(wheel_board.wheelSpeedSensorPin, WheelSpeedISR, RISING);
-	*/
 
 	// Initialize can bus
 	can_bus.Initialize(ICAN::BaudRate::kBaud1M);
 
-	/*
 	//Initialize our timer(s)
-	read_timer.addTimer(100, ReadAccelerometerPress);
-	read_timer.addTimer(100, updateThrottleLimit); // Global variable that constantly needs to be changed
-	*/
+	read_timer.AddTimer(1000, ReadAcceleratorPress);
 }
 
 void loop() {
