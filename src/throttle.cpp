@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <throttle.h>
-#include <cstdlib> // Including to gain access to absolute value function
+#include <cmath>
 
 /**
  * @brief Construct a new Throttle:: Throttle object
@@ -53,7 +53,7 @@ uint16_t Throttle::ReadAcceleratorPress()
     uint16_t max_throttle_vol = 92; // usually switches between 91 and 92
     uint16_t tolerance = 10;
 
-    float throttle_pos;
+    uint16_t throttle_pos;
     // Map vol_percent to throttle_pos. Note that the voltage is inversely
     // related to the position of the lever. When the lever is at its base
     // position, vol_percent is at 41. As the lever is turned toward its
@@ -78,12 +78,28 @@ uint16_t Throttle::ReadAcceleratorPress()
             throttle_pos = (min_throttle_vol + (100 - vol_percent)) / total_vol_range * 100;
         }
     }
+
+    // Apply equation to convert the throttle's position to torque
+    uint16_t torque = exp(0.06 * (throttle_pos - 9));
+    if (torque > 230) {
+        torque = 230;
+    }
+
+    /*
     Serial.print("Voltage (FOR TESTING): ");
     Serial.println(vol_percent);
     Serial.print("Position: ");
     Serial.println(throttle_pos);
     Serial.println();
-    return vol_percent;
+    */
+   /*
+    Serial.print("Throttle Position: ");
+    Serial.println(throttle_pos);
+    Serial.print("Torque: ");
+    Serial.println(torque);
+    Serial.println();
+    */
+    return torque;
 };
 
 bool Throttle::arePotentiometersCorrect()
