@@ -62,7 +62,7 @@ void setup() {
 
 	//Initialize our timer(s)
 	read_timer.AddTimer(100, ReadAcceleratorPress);
-	read_timer.AddTimer(100, printReceiveSignals);
+	//read_timer.AddTimer(100, printReceiveSignals);
 }
 
 void loop() {
