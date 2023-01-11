@@ -27,10 +27,10 @@ class Throttle
     private:
         //// Might not need all of these private fields
 
-        long brake_position;
+        long brake_pos;
         // Both potentiometer voltages must be within a threshold
-        long left_accelerometer_position;
-        long right_accelerometer_position;
+        long left_acc_pos;
+        long right_acc_pos;
         // Will be communicated to the CAN bus
         uint16_t cur_throttle_signal;
 };
