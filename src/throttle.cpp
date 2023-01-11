@@ -31,27 +31,35 @@ uint16_t Throttle::ReadAcceleratorPress()
     // right_acc_pos = analogRead(acc_sensor_right);
     // left_acc_pos = analogRead(acc_sensor_left);
     // brake_pos = analogRead(brake_sensor)
-    float pedal_val = 0;
+
+    //temp values (adjust when we get protoype because they should be to the left of deadzone)
+    //MIN_VAL_RIGHT is the value from the right sensor when the driver is resting foot on pedal (determine from testing)
+    //MAX_VAL_RIGHT is the value from the right sensor when the pedal is fully pressed
+    const uint16_t MIN_VAL_RIGHT = 370;
+    const uint16_t MAX_VAL_RIGHT = 1680;
+    //define range for left sensor
+    /*
+    const int MIN_VAL_LEFT = some number;
+    const int MAX_VAL_LEFT = some number;
+    */
+
 
     /* When we have all 3 sensors:
     if (!brakeAndAccelerator() && arePotentiometersCorrect()) {
-        pedal_val = (right_acc_pos + left_acc_pos)/2;
+        float pedal_val = (right_acc_pos + left_acc_pos)/2;
     }
     else {
         return 0;
     }
     */
 
-    //for now 
-    pedal_val = analogRead(acc_sensor_right);
+    //for now
+    float pedal_val = max(analogRead(acc_sensor_right), MAX_VAL_RIGHT);
 
-    //temp values
-    float max_val = 1680;
-    float min_val = 370;
-    //get rid of 100- if pedal is traveling other way
-    float throttle_percent = 100-(pedal_val-min_val)*100/(max_val-min_val); 
+    //map sensor value to percent (0 to 100)
+    float throttle_percent = (pedal_val-MIN_VAL_RIGHT)*100/(MAX_VAL_RIGHT-MIN_VAL_RIGHT); 
 
-    // Apply equation to convert the throttle's position to torque
+    //apply equation to convert the throttle's position (percent) to torque
     uint16_t torque = exp(0.06 * (throttle_percent - 9));
     if (torque > 230) {
         torque = 230;
