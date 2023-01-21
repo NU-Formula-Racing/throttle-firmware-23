@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include "virtualTimer.h"
 #include "throttle.h"
+#include <unity.h>
+#include <stdint.h>
 
 #define SERIAL_DEBUG
 
@@ -33,14 +35,15 @@ CANSignal<float, 16, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(-
 CANSignal<float, 32, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(-40), false> ambient_temp_signal{};
 CANRXMessage<3> rx_message{can_bus, 0x420, motor_temp_signal, coolant_temp_signal, ambient_temp_signal};
 
-void ReadAcceleratorPress() {
-	cur_throttle_signal = throttle.ReadAcceleratorPress();
+void getAcceleratorPress() {
+	cur_throttle_signal = throttle.getAcceleratorPress();
 	Serial.print("cur_throttle_signal: ");
 	Serial.println(cur_throttle_signal);
 	Serial.println("\n");
 };
 
 void printReceiveSignals() {
+	/*
 	can_bus.Tick();
 	Serial.print("motor_temp_signal");
 	Serial.println((float)motor_temp_signal);
@@ -49,6 +52,7 @@ void printReceiveSignals() {
 	Serial.print("ambient_temp_signal");
 	Serial.println((float)ambient_temp_signal);
 	Serial.println("\n");
+	*/
 };
 
 void setup() {
@@ -61,11 +65,11 @@ void setup() {
 	can_bus.Initialize(ICAN::BaudRate::kBaud1M);
 
 	//Initialize our timer(s)
-	read_timer.AddTimer(100, ReadAcceleratorPress);
+	read_timer.AddTimer(100, getAcceleratorPress);
 	read_timer.AddTimer(100, printReceiveSignals);
 }
 
 void loop() {
-	delay(0);
+	delay(1000);
 	read_timer.Tick(millis());
 }
