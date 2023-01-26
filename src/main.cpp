@@ -1,3 +1,5 @@
+#ifdef esp32dev
+
 #include <Arduino.h>
 #include "virtualTimer.h"
 #include "throttle.h"
@@ -73,3 +75,5 @@ void loop() {
 	delay(1000);
 	read_timer.Tick(millis());
 }
+
+#endif
