@@ -20,5 +20,6 @@ void SensorValueToPercentageTest(void) {
 
 int main(int argc, char **argv) {
     UNITY_BEGIN();
+    RUN_TEST(SensorValueToPercentageTest);
     UNITY_END();
 }

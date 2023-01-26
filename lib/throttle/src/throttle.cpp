@@ -4,7 +4,7 @@
 #include <cmath>
 #include <unity.h>
 #include <stdint.h>
-// #include <Arduino.h>
+#include <Arduino.h>
 #include "throttle_helpers.h"
 
 /**
