@@ -11,3 +11,15 @@
  */
 uint16_t SensorValueToPercentage(uint16_t sensor_val, uint16_t min_val, uint16_t max_val);
 
+/**
+ * @brief Returns true if the position values for the left accelerometer sensor
+ * (left_acc_pos) and the right accelerometer sensor (right_acc_pos) do not
+ * differ by more than 10%
+ * 
+ * @param left_acc_pos Position value for left accelerometer sensor (percentage from 0-100)
+ * @param right_acc_pos Position value for right accelerometer sensor (percentage from 0-100)
+ * @return true The position values agree with each other (less than 10% difference)
+ * @return false The position values DON'T agree with each other
+ */
+bool DoPotentiometersAgree(uint16_t left_acc_pos, uint16_t right_acc_pos);
+

@@ -25,7 +25,7 @@ Throttle::Throttle()
  * 
  * @return uint16_t
  */
-uint16_t Throttle::getAcceleratorPress()
+uint16_t Throttle::GetAcceleratorPress()
 {
     //initialize pin values
     const int acc_sensor_right = 34;
@@ -79,28 +79,8 @@ uint16_t Throttle::getAcceleratorPress()
     // Making a separate function: throttle_percent -> torque
     uint16_t torque = min(exp(0.06 * (throttle_percent - 9)), 230.0);
 
-    /*
-    Serial.print("Voltage (FOR TESTING): ");
-    Serial.println(pedal_val);
-    Serial.print("Throttle Percent: ");
-    Serial.println(throttle_percent);
-    Serial.println();
-    Serial.print("Torque: ");
-    Serial.println(torque);
-    Serial.println();
-    */
     return torque;
 };
-
-bool Throttle::arePotentiometersCorrect()
-{
-    // PSEUDOCODE
-    if (abs(left_acc_pos - right_acc_pos) < 10) {
-        return true;
-    }
-    return false;
-};
-
 
 bool Throttle::brakeAndAccelerator()
 {
