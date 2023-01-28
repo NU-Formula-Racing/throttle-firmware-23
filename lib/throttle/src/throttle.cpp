@@ -77,23 +77,9 @@ uint16_t Throttle::GetAcceleratorPress()
 
     //apply equation to convert the throttle's position (percent) to torque
     // Making a separate function: throttle_percent -> torque
-    uint16_t torque = min(exp(0.06 * (throttle_percent - 9)), 230.0);
+    uint16_t torque = min(ConvertPositionToTorque(throttle_percent), 230.0);
 
     return torque;
-};
-
-bool Throttle::brakeAndAccelerator()
-{
-    // PSEUDOCODE
-    /*
-    if (brake_position > 0 && left_acc_pos > 0 && right_acc_pos > 0) {
-        return true;
-    }
-    return false;
-    */
-
-   // TEMP UNTIL WE HAVE ALL SENSORS
-   return false;
 };
 
 #endif

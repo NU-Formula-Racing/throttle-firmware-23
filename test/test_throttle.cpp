@@ -25,7 +25,7 @@ void SensorValueToPercentageTest(void) {
     TEST_ASSERT_EQUAL(SensorValueToPercentage(10000, MIN_VAL_RIGHT, MAX_VAL_RIGHT), 100);
 }
 
-void DoPotentiometersAgree(void) {
+void DoPotentiometersAgreeTest(void) {
     // Testing position values when they should agree with each other
     TEST_ASSERT_TRUE(DoPotentiometersAgree(70, 74));
     TEST_ASSERT_TRUE(DoPotentiometersAgree(74, 70));
@@ -48,9 +48,19 @@ void DoPotentiometersAgree(void) {
     TEST_ASSERT_FALSE(DoPotentiometersAgree(90, 100));
 }
 
+void ConvertPositionToTorqueTest(void) {
+    TEST_ASSERT_EQUAL(ConvertPositionToTorque(0), exp(0.06 * (-9)));
+}
+
+void BrakeAndAcceleratorTest(void) {
+
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(SensorValueToPercentageTest);
-    RUN_TEST(DoPotentiometersAgree);
+    RUN_TEST(DoPotentiometersAgreeTest);
+    RUN_TEST(ConvertPositionToTorqueTest);
+    RUN_TEST(BrakeAndAcceleratorTest);
     UNITY_END();
 }

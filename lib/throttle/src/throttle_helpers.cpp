@@ -33,4 +33,21 @@ uint16_t SensorValueToPercentage(uint16_t sensor_val, uint16_t min_val, uint16_t
 bool DoPotentiometersAgree(uint16_t left_acc_pos, uint16_t right_acc_pos)
 {
     return abs(left_acc_pos-right_acc_pos) < 10;
-};
+}
+
+/**
+ * @brief Converts throttle_percent to a torque value
+ */
+uint16_t ConvertPositionToTorque(uint16_t throttle_percent) {
+    return exp(0.06 * (throttle_percent - 9));
+}
+
+/**
+ * @brief Checks if the brake and accelerator pedals are simultaneously pressed
+ * 
+ * TODO: Account for if throttle_percent only pressed a little
+ */
+bool BrakeAndAccelerator(uint16_t brake_position, uint16_t throttle_percent)
+{
+    return brake_position > 0 && throttle_percent > 0;
+}
