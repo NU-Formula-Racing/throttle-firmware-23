@@ -9,7 +9,7 @@
 class Throttle
 {
     public:
-        // Need to include constants
+        // TODO: Maybe add constants
         /*
         static constexpr int throttleSensorPin =;
         */
@@ -17,15 +17,7 @@ class Throttle
 
         // Reads how pressed the accelerometer pedal is and returns it as a
         // torque value
-        uint16_t getAcceleratorPress();
-
-        // Takes the value of a sensor, its minimum possible value, and maximum
-        // possible value to convert it to a percentage from 0 to 100
-        uint16_t sensorValueToPercentage(uint16_t sensorVal, uint16_t minVal, uint16_t maxVal);
-
-        // Returns true if the two potentiometers on the acceleration pedal
-        // agree with each other
-        bool arePotentiometersCorrect();
+        uint16_t GetAcceleratorPress();
 
         // Returns true if the brake and accelerator pedals are simultaneously pressed,
         // which would result in the throttle being set to 0 percent
