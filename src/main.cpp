@@ -34,12 +34,12 @@ CANSignal<float, 0, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(-4
 // CANSignal<float, 32, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(-40), false> ambient_temp_signal{};
 
 // TX CAN Signal for battery amperage and voltage
-CANSignal<float, 0, 8, CANTemplateConvertFloat(0.04), CANTemplateConvertFloat(0), false> battery_amperage_signal{};
-CANSignal<float, 8, 16, CANTemplateConvertFloat(0.04), CANTemplateConvertFloat(0), false> battery_voltage_signal{};
+CANSignal<float, 48, 16, CANTemplateConvertFloat(0.01), CANTemplateConvertFloat(0), false> battery_amperage_signal{};
+CANSignal<float, 24, 16, CANTemplateConvertFloat(0.01), CANTemplateConvertFloat(0), false> battery_voltage_signal{};
 
 // CANRXMessage
 CANRXMessage<1> motor_message{can_bus, 0x420, motor_temp_signal};
-CANRXMessage<2> amp_message{can_bus, 0x233, battery_amperage_signal, battery_voltage_signal};
+CANRXMessage<2> amp_message{can_bus, 0x240, battery_amperage_signal, battery_voltage_signal};
 
 void ReadAcceleratorPress() {
 	cur_throttle_signal = throttle.ReadAcceleratorPress(motor_temp_signal, battery_amperage_signal, battery_voltage_signal);
