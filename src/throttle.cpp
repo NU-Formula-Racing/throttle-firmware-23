@@ -26,8 +26,8 @@ uint16_t Throttle::ReadAcceleratorPress(float motor_temp, float batt_amp, float 
 {
     updateValues();
     float motor_perc = motorPercent(motor_temp);
-    float torque = min(convertBattAmp(batt_amp, batt_voltage), (float)230);
-    return throttle_perc * motor_perc * torque;
+    float torque_perc = min(convertBattAmp(batt_amp, batt_voltage), (float)100);
+    return throttle_perc * motor_perc * torque_perc;
 
     // apply equation to convert the throttle's position (percent) to torque
     // uint16_t torque = min(exp(0.06 * (throttle_percent - 9)), 230.0);
@@ -123,7 +123,10 @@ float Throttle::convertBattAmp(float batt_amp, float batt_voltage)
     float rpm = 2.0;
 
     // Use torque equation (includes power -> P = IV)
-    return 9.5488 * batt_amp * batt_voltage / rpm;
+    uint8_t torque = 9.5488 * batt_amp * batt_voltage / rpm;
+
+    // map from 0 to 100 percent
+    return torque * 100/230;
 };
 
 float Throttle::motorPercent(float motor_temp) 
