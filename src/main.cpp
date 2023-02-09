@@ -42,9 +42,12 @@ CANRXMessage<2> amp_message{can_bus, 0x240, battery_amperage_signal, battery_vol
 
 void ReadAcceleratorPress() {
 	cur_throttle_signal = throttle.ReadAcceleratorPress(motor_temp_signal, battery_amperage_signal, battery_voltage_signal);
-	Serial.print("cur_throttle_signal: ");
-	Serial.println(cur_throttle_signal);
-	Serial.println("\n");
+	bool debug_mode = false;
+	if (debug_mode) {
+		Serial.print("cur_throttle_signal: ");
+		Serial.println(cur_throttle_signal);
+		Serial.println("\n");
+	}
 };
 
 void printReceiveSignals() {
@@ -55,8 +58,7 @@ void printReceiveSignals() {
 	Serial.println((float)battery_amperage_signal);
 	Serial.print("Battery Voltage: ");
 	Serial.println((float)battery_voltage_signal);
-	Serial.print("Torque: ");
-	Serial.println((float)cur_throttle_signal);
+	Serial.println("\n");
 };
 
 void setup() {

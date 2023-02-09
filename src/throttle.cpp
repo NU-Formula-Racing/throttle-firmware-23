@@ -17,7 +17,7 @@ Throttle::Throttle(ICAN &can_interface, ICANTXMessage &throttle_m): throttle_msg
 
 /**
  * @brief Reads how pressed the accelerometer pedal is and returns it as a
- * torque from 0-230 Nm
+ * percent from 0-100
  * 
  * @return uint16_t
  */
