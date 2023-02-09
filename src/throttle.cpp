@@ -1,18 +1,17 @@
 #include <Arduino.h>
 #include <throttle.h>
 #include <cmath>
-
+#include "can_interface.h"
 /**
  * @brief Construct a new Throttle:: Throttle object
  * 
  * @param can_frame 
  */
-Throttle::Throttle()
+Throttle::Throttle(ICAN &can_interface, ICANTXMessage &throttle_m): throttle_msg(throttle_m), can_interface_(can_interface)
 {
     long brake_pos = 0;
     long left_acc_pos = 0;
     long right_acc_pos = 0;
-    float cur_throttle_signal = 0;
     float throttle_perc = 0;
 };
 
@@ -31,18 +30,6 @@ uint16_t Throttle::ReadAcceleratorPress(float motor_temp, float batt_amp, float 
 
     // apply equation to convert the throttle's position (percent) to torque
     // uint16_t torque = min(exp(0.06 * (throttle_percent - 9)), 230.0);
-
-    /*
-    Serial.print("Voltage (FOR TESTING): ");
-    Serial.println(pedal_val);
-    Serial.print("Throttle Percent: ");
-    Serial.println(throttle_percent);
-    Serial.println();
-    Serial.print("Torque: ");
-    Serial.println(torque);
-    Serial.println();
-    */
-
 };
 
 void Throttle::updateValues()
@@ -76,14 +63,15 @@ void Throttle::updateValues()
     brake_pos = (brake_val-MIN_VAL_BRAKE)*100/(MAX_VAL_BRAKE-MIN_VAL_BRAKE);
     */
 
-    /* When we have all 3 sensors:
+    // When we have all 3 sensors:
     if (!brakeAndAccelerator() && arePotentiometersCorrect()) {
         float throttle_percent = (right_acc_pos + left_acc_pos)/2.0;
     }
     else {
-        return 0;
+        throttle_perc = 0;
+        throttle_msg.EncodeSignals();
     }
-    */
+
 
     // for now
     float throttle_percent = right_acc_pos;
