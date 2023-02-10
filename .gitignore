@@ -3,3 +3,6 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+.DS_Store
+include/.DS_Store
+RPPS-HS Hollow Shaft Rotary Potentiometer Angle Position Sensor_Data Sheet_Rev0.pdf

@@ -1,3 +1,7 @@
+#ifdef esp32dev
+
+#include <stdint.h>
+
 /**
  * @brief Definitions and constants for the throttle.
  * 
@@ -5,18 +9,15 @@
 class Throttle
 {
     public:
-        // Need to include constants
+        // TODO: Maybe add constants
         /*
         static constexpr int throttleSensorPin =;
         */
         Throttle();
-        // Reads how much the accelerometer is being pressed (a percentage
-        // from 0 to 100)
-        uint16_t ReadAcceleratorPress();
 
-        // Returns true if the two potentiometers on the acceleration pedal
-        // agree with each other
-        bool arePotentiometersCorrect();
+        // Reads how pressed the accelerometer pedal is and returns it as a
+        // torque value
+        uint16_t GetAcceleratorPress();
 
         // Returns true if the brake and accelerator pedals are simultaneously pressed,
         // which would result in the throttle being set to 0 percent
@@ -34,3 +35,5 @@ class Throttle
         // Will be communicated to the CAN bus
         uint16_t cur_throttle_signal;
 };
+
+#endif
