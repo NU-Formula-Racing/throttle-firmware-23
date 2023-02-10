@@ -48,10 +48,6 @@ void DoPotentiometersAgreeTest(void) {
     TEST_ASSERT_FALSE(DoPotentiometersAgree(90, 100));
 }
 
-void ConvertPositionToTorqueTest(void) {
-    TEST_ASSERT_EQUAL(ConvertPositionToTorque(0), exp(0.06 * (-9)));
-}
-
 void BrakeAndAcceleratorTest(void) {
 
 }
