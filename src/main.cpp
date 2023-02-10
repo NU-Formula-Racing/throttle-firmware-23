@@ -16,6 +16,8 @@ TeensyCAN<1> can_bus{};
 ESPCAN can_bus{};
 #endif
 
+// Initialize board
+Throttle throttle;
 
 // Structure for handling timers
 VirtualTimerGroup read_timer;
@@ -24,40 +26,28 @@ VirtualTimerGroup read_timer;
 CANSignal<uint8_t, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> cur_throttle_signal{};
 
 // TX CAN Message (Might need to edit transmit period (currently 100))
-CANTXMessage<1> tx_message{can_bus, 0x300, 1, 10, read_timer, cur_throttle_signal};
+CANTXMessage<1> tx_message{can_bus, 0x300, 1, 100, read_timer, cur_throttle_signal};
 
-// Initialize board
-Throttle throttle(can_bus, tx_message);
-
-// TX CAN Signal for motor temp
 CANSignal<float, 0, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(-40), false> motor_temp_signal{};
-
-// TX CAN Signal for battery amperage and voltage
-CANSignal<float, 48, 16, CANTemplateConvertFloat(0.01), CANTemplateConvertFloat(0), false> battery_amperage_signal{};
-CANSignal<float, 24, 16, CANTemplateConvertFloat(0.01), CANTemplateConvertFloat(0), false> battery_voltage_signal{};
-
-// CANRXMessage
-CANRXMessage<1> motor_message{can_bus, 0x420, motor_temp_signal};
-CANRXMessage<2> amp_message{can_bus, 0x240, battery_amperage_signal, battery_voltage_signal};
+CANSignal<float, 16, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(-40), false> coolant_temp_signal{};
+CANSignal<float, 32, 16, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(-40), false> ambient_temp_signal{};
+CANRXMessage<3> rx_message{can_bus, 0x420, motor_temp_signal, coolant_temp_signal, ambient_temp_signal};
 
 void ReadAcceleratorPress() {
-	cur_throttle_signal = throttle.ReadAcceleratorPress(motor_temp_signal, battery_amperage_signal, battery_voltage_signal);
-	bool debug_mode = false;
-	if (debug_mode) {
-		Serial.print("cur_throttle_signal: ");
-		Serial.println(cur_throttle_signal);
-		Serial.println("\n");
-	}
+	cur_throttle_signal = throttle.ReadAcceleratorPress();
+	Serial.print("cur_throttle_signal: ");
+	Serial.println(cur_throttle_signal);
+	Serial.println("\n");
 };
 
 void printReceiveSignals() {
 	can_bus.Tick();
-	Serial.print("Motor Temp: ");
+	Serial.print("motor_temp_signal");
 	Serial.println((float)motor_temp_signal);
-	Serial.print("Battery Amperage: ");
-	Serial.println((float)battery_amperage_signal);
-	Serial.print("Battery Voltage: ");
-	Serial.println((float)battery_voltage_signal);
+	Serial.print("coolant_temp_signal");
+	Serial.println((float)coolant_temp_signal);
+	Serial.print("ambient_temp_signal");
+	Serial.println((float)ambient_temp_signal);
 	Serial.println("\n");
 };
 
@@ -72,11 +62,7 @@ void setup() {
 
 	//Initialize our timer(s)
 	read_timer.AddTimer(100, ReadAcceleratorPress);
-
-	bool debug_mode = false;
-	if (debug_mode) {
-		read_timer.AddTimer(100, printReceiveSignals);
-	}
+	read_timer.AddTimer(100, printReceiveSignals);
 }
 
 void loop() {
