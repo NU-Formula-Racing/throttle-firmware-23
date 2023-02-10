@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <throttle.h>
 #include <cmath>
+#include <throttle_helpers.h>
 /**
  * @brief Construct a new Throttle:: Throttle object
  * 
@@ -63,57 +64,17 @@ void Throttle::updateValues()
     */
 
     // When we have all 3 sensors:
-    /*
-    if (!brakeAndAccelerator() && arePotentiometersCorrect()) {
-        float throttle_percent = (right_acc_pos + left_acc_pos)/2.0;
+    float throttle_percent = (right_acc_pos + left_acc_pos)/2.0;
+    if (BrakeAndAccelerator(brake_pos, throttle_percent) || !DoPotentiometersAgree(right_acc_pos, left_acc_pos)) {
+        throttle_percent = 0;
     }
-    else {
-        throttle_perc = 0;
-    }
-    */
 
     // for now
-    float throttle_percent = right_acc_pos;
+    throttle_percent = right_acc_pos;
 
     // Set throttle position sensor value (0-1)
     throttle_perc = throttle_percent/100.0;
 }
-
-uint16_t Throttle::SensorValueToPercentage(uint16_t sensor_val, uint16_t min_val, uint16_t max_val)
-{
-    if (sensor_val < min_val) {
-        return 0;
-    }
-    if (sensor_val > max_val) {
-        return 100;
-    }
-
-    return (sensor_val-min_val)*100 / (max_val-min_val);
-};
-
-bool Throttle::arePotentiometersCorrect()
-{
-    // PSEUDOCODE
-    if (abs(left_acc_pos - right_acc_pos) < 10) {
-        return true;
-    }
-    return false;
-};
-
-
-bool Throttle::brakeAndAccelerator()
-{
-    // PSEUDOCODE
-    /*
-    if (brake_pos > 0 && left_acc_pos > 0 && right_acc_pos > 0) {
-        return true;
-    }
-    return false;
-    */
-
-   // TEMP UNTIL WE HAVE ALL SENSORS
-   return false;
-};
 
 float Throttle::convertBattAmp(float batt_amp, float batt_voltage)
 {

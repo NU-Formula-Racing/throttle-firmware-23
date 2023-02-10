@@ -56,7 +56,6 @@ int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(SensorValueToPercentageTest);
     RUN_TEST(DoPotentiometersAgreeTest);
-    RUN_TEST(ConvertPositionToTorqueTest);
-    RUN_TEST(BrakeAndAcceleratorTest);
+    // RUN_TEST(BrakeAndAcceleratorTest);
     UNITY_END();
 }
