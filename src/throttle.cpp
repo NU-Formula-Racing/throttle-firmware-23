@@ -14,6 +14,8 @@ Throttle::Throttle()
     long left_acc_pos = 0;
     long right_acc_pos = 0;
     float throttle_perc = 0;
+
+    // Derivative to measure change in right_acc_pos
 };
 
 /**
@@ -37,8 +39,8 @@ void Throttle::updateValues()
 {
     // initialize pin values
     const uint16_t ACC_SENSOR_RIGHT = 34;
-    // const uint16_t ACC_SENSOR_LEFT = some pin #
-    // const uint16_t BRAKE_SENSOR = some pin #
+    const uint16_t ACC_SENSOR_LEFT = 35;
+    const uint16_t BRAKE_SENSOR = 36;
 
     // temp values (adjust when we get protoype because they should be to the left of deadzone)
     // MIN_VAL_RIGHT is the value from the right sensor when the driver is resting foot on pedal (determine from
@@ -57,7 +59,10 @@ void Throttle::updateValues()
     // right_acc_pos, left_acc_pos, brake_pos will be a value from 0 to 100 -> allows for comparison because sensors
     // have different ranges
     uint16_t right_acc_val = max(analogRead(ACC_SENSOR_RIGHT), MIN_VAL_RIGHT);  // Don't get negative values
+    right_acc_val = min(right_acc_val, MAX_VAL_RIGHT);                          // Ensure maximum value is not exceeded
     right_acc_pos = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
+
+    // TODO: Uncomment once other sensors are hooked up
     /*
     uint16_t left_acc_val = max(analogRead(ACC_SENSOR_LEFT), MIN_VAL_LEFT);
     left_acc_pos = SensorValueToPercentage(left_acc_val, MIN_VAL_LEFT, MIN_VAL_RIGHT);
@@ -66,14 +71,16 @@ void Throttle::updateValues()
     */
 
     // When we have all 3 sensors:
+    /*
     float throttle_percent = (right_acc_pos + left_acc_pos) / 2.0;
     if (BrakeAndAccelerator(brake_pos, throttle_percent) || !DoPotentiometersAgree(right_acc_pos, left_acc_pos))
     {
         throttle_percent = 0;
     }
+    */
 
     // for now
-    throttle_percent = right_acc_pos;
+    float throttle_percent = right_acc_pos;
 
     // Set throttle position sensor value (0-1)
     throttle_perc = throttle_percent / 100.0;
@@ -82,7 +89,12 @@ void Throttle::updateValues()
 float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
 {
     // Use torque equation (includes power -> P = IV)
-    uint8_t torque = 9.5488 * batt_amp * batt_voltage / rpm;
+    uint8_t torque = 230;
+
+    if (rpm != 0)
+    {
+        torque = 9.5488 * batt_amp * batt_voltage / rpm;
+    }
 
     // map from 0 to 100 percent
     return torque * 100 / 230;

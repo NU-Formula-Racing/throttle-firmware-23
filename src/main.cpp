@@ -38,13 +38,15 @@ void ReadAcceleratorPress()
 {
     uint16_t throttle_percent = throttle.GetAcceleratorPress(
         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
-    inverter.RequestTorque(static_cast<float>(throttle_percent));
-    bool debug_mode = false;
+    inverter.RequestTorque(throttle_percent);
+    bool debug_mode = true;
     if (debug_mode)
     {
+        /*
         Serial.print("cur_throttle_signal: ");
         Serial.println(throttle_percent);
         Serial.println("\n");
+        */
     }
 };
 
