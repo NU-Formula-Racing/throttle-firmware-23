@@ -15,13 +15,13 @@ class Throttle
 
         // Reads how pressed the accelerometer pedal is and returns it as a
         // torque value
-        uint16_t GetAcceleratorPress(float motor_temp, float batt_amp, float batt_voltage);
+        uint16_t GetAcceleratorPress(float motor_temp, float batt_amp, float batt_voltage, float rpm);
 
         // Updates fields of Throttle
         void updateValues();
 
         // Converts max battery amperage into a torque value
-        float convertBattAmp (float batt_amp, float batt_volatge);
+        float convertBattAmp (float batt_amp, float batt_voltage, float rpm);
 
         // Converts motor temperature into a percentage of torque
         float motorPercent (float motor_temp);

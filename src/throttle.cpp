@@ -1,11 +1,12 @@
 #include <Arduino.h>
 #include <throttle.h>
-#include <cmath>
 #include <throttle_helpers.h>
+
+#include <cmath>
 /**
  * @brief Construct a new Throttle:: Throttle object
- * 
- * @param can_frame 
+ *
+ * @param can_frame
  */
 Throttle::Throttle()
 {
@@ -18,14 +19,14 @@ Throttle::Throttle()
 /**
  * @brief Reads how pressed the accelerometer pedal is and returns it as a
  * percent from 0-100
- * 
+ *
  * @return uint16_t
  */
-uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float batt_voltage)
+uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float batt_voltage, float rpm)
 {
     updateValues();
     float motor_perc = motorPercent(motor_temp);
-    float torque_perc = min(convertBattAmp(batt_amp, batt_voltage), (float)100);
+    float torque_perc = min(convertBattAmp(batt_amp, batt_voltage, rpm), (float)100);
     return throttle_perc * motor_perc * torque_perc;
 
     // apply equation to convert the throttle's position (percent) to torque
@@ -34,17 +35,17 @@ uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float b
 
 void Throttle::updateValues()
 {
-    //initialize pin values
+    // initialize pin values
     const uint16_t ACC_SENSOR_RIGHT = 34;
     // const uint16_t ACC_SENSOR_LEFT = some pin #
     // const uint16_t BRAKE_SENSOR = some pin #
 
-    //temp values (adjust when we get protoype because they should be to the left of deadzone)
-    //MIN_VAL_RIGHT is the value from the right sensor when the driver is resting foot on pedal (determine from testing)
-    //MAX_VAL_RIGHT is the value from the right sensor when the pedal is fully pressed
+    // temp values (adjust when we get protoype because they should be to the left of deadzone)
+    // MIN_VAL_RIGHT is the value from the right sensor when the driver is resting foot on pedal (determine from
+    // testing) MAX_VAL_RIGHT is the value from the right sensor when the pedal is fully pressed
     const uint16_t MIN_VAL_RIGHT = 370;
     const uint16_t MAX_VAL_RIGHT = 1680;
-    //define range for left sensor and brake sensor (min_val will always be when foot is resting on pedal)
+    // define range for left sensor and brake sensor (min_val will always be when foot is resting on pedal)
     /*
     const int MIN_VAL_LEFT = some number;
     const int MAX_VAL_LEFT = some number;
@@ -52,20 +53,22 @@ void Throttle::updateValues()
     const int MAX_VAL_BRAKE = some number;
     */
 
-    //right_acc_val, left_acc_val, brake_val are exact values from sensor (analogRead)
-    //right_acc_pos, left_acc_pos, brake_pos will be a value from 0 to 100 -> allows for comparison because sensors have different ranges
-    uint16_t right_acc_val = max(analogRead(ACC_SENSOR_RIGHT), MIN_VAL_RIGHT); //Don't get negative values
+    // right_acc_val, left_acc_val, brake_val are exact values from sensor (analogRead)
+    // right_acc_pos, left_acc_pos, brake_pos will be a value from 0 to 100 -> allows for comparison because sensors
+    // have different ranges
+    uint16_t right_acc_val = max(analogRead(ACC_SENSOR_RIGHT), MIN_VAL_RIGHT);  // Don't get negative values
     right_acc_pos = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
     /*
-    uint16_t left_acc_val = max(analogRead(ACC_SENSOR_LEFT), MIN_VAL_LEFT); 
+    uint16_t left_acc_val = max(analogRead(ACC_SENSOR_LEFT), MIN_VAL_LEFT);
     left_acc_pos = SensorValueToPercentage(left_acc_val, MIN_VAL_LEFT, MIN_VAL_RIGHT);
-    uint16_t brake_val = max(analogRead(BRAKE_SENSOR), MIN_VAL_BRAKE); 
+    uint16_t brake_val = max(analogRead(BRAKE_SENSOR), MIN_VAL_BRAKE);
     brake_pos = SensorValueToPercentage(brake_val, MIN_VAL_BRAKE, MIN_VAL_BRAKE);
     */
 
     // When we have all 3 sensors:
-    float throttle_percent = (right_acc_pos + left_acc_pos)/2.0;
-    if (BrakeAndAccelerator(brake_pos, throttle_percent) || !DoPotentiometersAgree(right_acc_pos, left_acc_pos)) {
+    float throttle_percent = (right_acc_pos + left_acc_pos) / 2.0;
+    if (BrakeAndAccelerator(brake_pos, throttle_percent) || !DoPotentiometersAgree(right_acc_pos, left_acc_pos))
+    {
         throttle_percent = 0;
     }
 
@@ -73,31 +76,30 @@ void Throttle::updateValues()
     throttle_percent = right_acc_pos;
 
     // Set throttle position sensor value (0-1)
-    throttle_perc = throttle_percent/100.0;
+    throttle_perc = throttle_percent / 100.0;
 }
 
-float Throttle::convertBattAmp(float batt_amp, float batt_voltage)
+float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
 {
-    // Will get this value from the inverter
-    // temp for now
-    float rpm = 2.0;
-
     // Use torque equation (includes power -> P = IV)
     uint8_t torque = 9.5488 * batt_amp * batt_voltage / rpm;
 
     // map from 0 to 100 percent
-    return torque * 100/230;
+    return torque * 100 / 230;
 };
 
-float Throttle::motorPercent(float motor_temp) 
+float Throttle::motorPercent(float motor_temp)
 {
-    if (motor_temp < 95) {
+    if (motor_temp < 95)
+    {
         return 1;
     }
-    else if (motor_temp < 115) {
-        return 1-(1/20)*(motor_temp-95);
+    else if (motor_temp < 115)
+    {
+        return 1 - (1 / 20) * (motor_temp - 95);
     }
-    else {
+    else
+    {
         return 0;
     }
 };
