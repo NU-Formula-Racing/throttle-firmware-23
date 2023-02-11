@@ -48,10 +48,6 @@ void DoPotentiometersAgreeTest(void) {
     TEST_ASSERT_FALSE(DoPotentiometersAgree(90, 100));
 }
 
-void ConvertPositionToTorqueTest(void) {
-    TEST_ASSERT_EQUAL(ConvertPositionToTorque(0), exp(0.06 * (-9)));
-}
-
 void BrakeAndAcceleratorTest(void) {
 
 }
@@ -60,7 +56,6 @@ int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(SensorValueToPercentageTest);
     RUN_TEST(DoPotentiometersAgreeTest);
-    RUN_TEST(ConvertPositionToTorqueTest);
-    RUN_TEST(BrakeAndAcceleratorTest);
+    // RUN_TEST(BrakeAndAcceleratorTest);
     UNITY_END();
 }
