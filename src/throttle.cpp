@@ -38,34 +38,61 @@ uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float b
 void Throttle::updateValues()
 {
     // initialize pin values
-    const uint16_t ACC_SENSOR_RIGHT = 34;
     const uint16_t ACC_SENSOR_LEFT = 35;
-    const uint16_t BRAKE_SENSOR = 36;
+    const uint16_t ACC_SENSOR_RIGHT = 36;
+    // const uint16_t BRAKE_SENSOR = 36;
 
     // temp values (adjust when we get protoype because they should be to the left of deadzone)
     // MIN_VAL_RIGHT is the value from the right sensor when the driver is resting foot on pedal (determine from
-    // testing) MAX_VAL_RIGHT is the value from the right sensor when the pedal is fully pressed
-    const uint16_t MIN_VAL_RIGHT = 370;
-    const uint16_t MAX_VAL_RIGHT = 1680;
+    // testing)
+
     // define range for left sensor and brake sensor (min_val will always be when foot is resting on pedal)
+    const uint16_t MIN_VAL_LEFT = 1500;
+    const uint16_t MAX_VAL_LEFT = 2000;
+
+    // MAX_VAL_RIGHT is the value from the right sensor when the pedal is fully pressed
+    // NOTE: Occasionally outlier values less than 1450 appear and over 2050 appear, though they are very uncommon. We will
+    // treat 1450 as the right sensor's minimum value and 2050 as its maximum value for now.
+    const uint16_t MIN_VAL_RIGHT = 1450;
+    const uint16_t MAX_VAL_RIGHT = 2050;
+
     /*
-    const int MIN_VAL_LEFT = some number;
-    const int MAX_VAL_LEFT = some number;
     const int MIN_VAL_BRAKE = some number;
     const int MAX_VAL_BRAKE = some number;
+    */
+
+    Serial.print("left_acc_val:");
+    Serial.println(analogRead(ACC_SENSOR_LEFT));
+    /*
+    Serial.print("left_acc_pos:");
+    Serial.println(left_acc_pos);
+    */
+
+    Serial.print("right_acc_val:");
+    Serial.println(analogRead(ACC_SENSOR_RIGHT));
+    /*
+    Serial.print("right_acc_pos:");
+    Serial.println(right_acc_pos);
+    */
+
+   /*
+    Serial.print("DoPotentiometersAgree:");
+    Serial.println(DoPotentiometersAgree(left_acc_pos, right_acc_pos));
     */
 
     // right_acc_val, left_acc_val, brake_val are exact values from sensor (analogRead)
     // right_acc_pos, left_acc_pos, brake_pos will be a value from 0 to 100 -> allows for comparison because sensors
     // have different ranges
-    uint16_t right_acc_val = max(analogRead(ACC_SENSOR_RIGHT), MIN_VAL_RIGHT);  // Don't get negative values
-    right_acc_val = min(right_acc_val, MAX_VAL_RIGHT);                          // Ensure maximum value is not exceeded
+    uint16_t left_acc_val = max(analogRead(ACC_SENSOR_LEFT), MIN_VAL_LEFT); // Don't get negative values
+    left_acc_val = min(left_acc_val, MAX_VAL_LEFT); // Ensure maximum value is not exceeded
+    left_acc_pos = SensorValueToPercentage(left_acc_val, MIN_VAL_LEFT, MAX_VAL_RIGHT);
+
+    uint16_t right_acc_val = max(analogRead(ACC_SENSOR_RIGHT), MIN_VAL_RIGHT);
+    right_acc_val = min(right_acc_val, MAX_VAL_RIGHT);
     right_acc_pos = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
 
-    // TODO: Uncomment once other sensors are hooked up
+    // TODO: Uncomment once brake sensor is hooked up
     /*
-    uint16_t left_acc_val = max(analogRead(ACC_SENSOR_LEFT), MIN_VAL_LEFT);
-    left_acc_pos = SensorValueToPercentage(left_acc_val, MIN_VAL_LEFT, MIN_VAL_RIGHT);
     uint16_t brake_val = max(analogRead(BRAKE_SENSOR), MIN_VAL_BRAKE);
     brake_pos = SensorValueToPercentage(brake_val, MIN_VAL_BRAKE, MIN_VAL_BRAKE);
     */
@@ -79,11 +106,21 @@ void Throttle::updateValues()
     }
     */
 
-    // for now
-    float throttle_percent = right_acc_pos;
+   // If the potentiometers do not agree (their values are not within 10% of
+   // each other), then we must send 0 torque
+   float throttle_percent = 0;
+    if (DoPotentiometersAgree(left_acc_pos, right_acc_pos)) {
+        throttle_percent = (left_acc_pos+right_acc_pos) / 2;
+    }
 
     // Set throttle position sensor value (0-1)
     throttle_perc = throttle_percent / 100.0;
+
+    Serial.print("Do potentiometers agree:");
+    Serial.println(DoPotentiometersAgree(left_acc_pos, right_acc_pos));
+    Serial.println();
+
+    delay(500);
 }
 
 float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
