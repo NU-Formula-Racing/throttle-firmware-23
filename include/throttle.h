@@ -20,6 +20,8 @@ class Throttle
         // Updates fields of Throttle
         void updateValues();
 
+        bool PotentiometersAgree();
+
         // Converts max battery amperage into a torque value
         float convertBattAmp (float batt_amp, float batt_voltage, float rpm);
 
