@@ -42,11 +42,9 @@ void ReadAcceleratorPress()
     bool debug_mode = true;
     if (debug_mode)
     {
-        /*
         Serial.print("cur_throttle_signal: ");
         Serial.println(throttle_percent);
         Serial.println("\n");
-        */
     }
 };
 
