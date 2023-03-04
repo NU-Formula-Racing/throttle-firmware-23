@@ -95,35 +95,17 @@ void printReceiveSignals()
     Serial.println("\n");
 };
 
-void setup()
+void changeState()
 {
-#ifdef SERIAL_DEBUG
-    // Initialize serial output
-    Serial.begin(9600);  // Baud rate (Can transfer max of 9600 bits/second)
-#endif
-
-    // Initialize can bus
-    can_bus.Initialize(ICAN::BaudRate::kBaud1M);
-
-    // Initialize our timer(s)
-    read_timer.AddTimer(10, RequestTorque);
-
-    bool debug_mode = false;
-    if (debug_mode)
-    {
-        read_timer.AddTimer(100, printReceiveSignals);
-    }
-
-    // Request values from inverter
-    inverter.RequestMotorTemperature(100);
-    inverter.RequestRPM(100);
-}
-
-void changeState(state& currentState)
-{
+    bool onswitch = true;
+    float threshold = 100;
+    float speed = inverter.GetRPM();
     switch (currentState) {
         case OFF:
             // if brake and button pressed, switch to N
+            if (onswitch) {
+                currentState = N;
+            }
             break;
         case N:
             // listen to BMS status
@@ -150,12 +132,21 @@ void changeState(state& currentState)
             // if BMS fault, switch to off
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
+                break;
             }
             // if switch is off and speed > threshold, switch to fault drive
+            if (onswitch && speed > threshold) {
+                currentState = FDRIVE;
+            }
             break;
         case FDRIVE:
             // if switch on, switch to drive
+            if (onswitch) {
+                currentState = DRIVE;
             // if switch off and speed < threshold, switch to off
+            } else if (speed < threshold) {
+                currentState = OFF;
+            }
             // listen to BMS
             // if BMS fault, switch to off
             if (BMS_State == BMSState::kFault) {
@@ -165,7 +156,7 @@ void changeState(state& currentState)
     }
 }
 
-void processState(state& currentState)
+void processState()
 {
     switch (currentState) {
         case OFF:
@@ -178,13 +169,40 @@ void processState(state& currentState)
             break;
         case DRIVE:
             // request torque based on pedal values
-            RequestTorque();
+            RequestTorque;
             break;
         case FDRIVE:
             // request 0 torque
             inverter.RequestTorque(0);
             break;
     }
+}
+
+void setup()
+{
+#ifdef SERIAL_DEBUG
+    // Initialize serial output
+    Serial.begin(9600);  // Baud rate (Can transfer max of 9600 bits/second)
+#endif
+
+    // Initialize can bus
+    can_bus.Initialize(ICAN::BaudRate::kBaud1M);
+
+    // Initialize our timer(s)
+    // read_timer.AddTimer(10, RequestTorque);
+    read_timer.AddTimer(10, changeState);
+    read_timer.AddTimer(10, processState);
+
+
+    bool debug_mode = false;
+    if (debug_mode)
+    {
+        read_timer.AddTimer(100, printReceiveSignals);
+    }
+
+    // Request values from inverter
+    inverter.RequestMotorTemperature(100);
+    inverter.RequestRPM(100);
 }
 
 void loop()
