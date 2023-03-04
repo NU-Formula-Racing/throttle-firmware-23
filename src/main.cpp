@@ -22,7 +22,7 @@ ESPCAN can_bus{};
 VirtualTimerGroup read_timer;
 
 // Initialize board
-Throttle throttle{};
+Throttle throttle{};    
 
 // Instantiate inverter
 Inverter inverter(can_bus);
@@ -39,6 +39,7 @@ void ReadAcceleratorPress()
     uint16_t throttle_percent = throttle.GetAcceleratorPress(
         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
     inverter.RequestTorque(throttle_percent);
+    // Serial.println(throttle_percent);
     bool debug_mode = true;
     if (debug_mode)
     {
@@ -77,6 +78,7 @@ void setup()
     // Initialize our timer(s)
     read_timer.AddTimer(10, ReadAcceleratorPress);
     read_timer.AddTimer(1, []() {throttle.CalculateMovingAverage();});
+    read_timer.AddTimer(1000, []() {Serial.println(analogRead(25));});
 
     bool debug_mode = false;
     if (debug_mode)

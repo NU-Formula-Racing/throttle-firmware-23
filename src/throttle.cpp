@@ -30,7 +30,7 @@ uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float b
     updateValues();
     float motor_perc = motorPercent(motor_temp);
     float torque_perc = min(convertBattAmp(batt_amp, batt_voltage, rpm), (float)100);
-    return static_cast<uint16_t>(throttle_perc * motor_perc * torque_perc * 100);
+    return static_cast<uint16_t>(throttle_perc * motor_perc * torque_perc);
 
     // apply equation to convert the throttle's position (percent) to torque
     // uint16_t torque = min(exp(0.06 * (throttle_percent - 9)), 230.0);
@@ -84,20 +84,20 @@ void Throttle::updateValues()
     const uint16_t MAX_VAL_BRAKE = 1680;
 
 
-    Serial.print("left_acc_val:");
-    Serial.println(analogRead(ACC_SENSOR_LEFT));
-    Serial.println(leftaverage);
+    // Serial.print("left_acc_val:");
+    // Serial.println(analogRead(ACC_SENSOR_LEFT));
+    // Serial.println(leftaverage);
     /*
     Serial.print("left_acc_pos:");
     Serial.println(left_acc_pos);
     */
 
-    Serial.print("right_acc_val:");
-    Serial.println(analogRead(ACC_SENSOR_RIGHT));
-    Serial.println(rightaverage);
+    // Serial.print("right_acc_val:");
+    // Serial.println(analogRead(ACC_SENSOR_RIGHT));
+    // Serial.println(rightaverage);
 
-    Serial.print("brake value:");
-    Serial.println(analogRead(BRAKE_SENSOR));
+    // Serial.print("brake value:");
+    // Serial.println(analogRead(BRAKE_SENSOR));
     /*
     Serial.print("right_acc_pos:");
     Serial.println(right_acc_pos);
@@ -125,8 +125,8 @@ void Throttle::updateValues()
     uint16_t brake_val = max(analogRead(BRAKE_SENSOR), MIN_VAL_BRAKE);
     brake_val = min(brake_val, MAX_VAL_BRAKE);
     brake_pos = SensorValueToPercentage(brake_val, MIN_VAL_BRAKE, MAX_VAL_BRAKE);
-    Serial.print("brake pos:");
-    Serial.println(brake_pos);
+    // Serial.print("brake pos:");
+    // Serial.println(brake_pos);
 
     // When we have all 3 sensors:
     float throttle_percent = (right_acc_pos + left_acc_pos) / 2.0;
@@ -144,13 +144,12 @@ void Throttle::updateValues()
     // Set throttle position sensor value (0-1)
     throttle_perc = throttle_percent / 100.0;
 
-    Serial.print("Do potentiometers agree:");
-    Serial.println(DoPotentiometersAgree(left_acc_pos, right_acc_pos));
-    Serial.println();
-    Serial.println(throttle_perc);
+    // Serial.print("Do potentiometers agree:");
+    // Serial.println(DoPotentiometersAgree(left_acc_pos, right_acc_pos));
+    // Serial.println();
+    // Serial.println(throttle_perc);
 
-    delay(500);
-}
+};
 
 float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
 {
