@@ -22,7 +22,7 @@ ESPCAN can_bus{};
 VirtualTimerGroup read_timer;
 
 // Initialize board
-Throttle throttle;
+Throttle throttle{};
 
 // Instantiate inverter
 Inverter inverter(can_bus);
@@ -62,6 +62,8 @@ void printReceiveSignals()
     Serial.println("\n");
 };
 
+
+
 void setup()
 {
 #ifdef SERIAL_DEBUG
@@ -74,6 +76,7 @@ void setup()
 
     // Initialize our timer(s)
     read_timer.AddTimer(10, ReadAcceleratorPress);
+    read_timer.AddTimer(1, []() {throttle.CalculateMovingAverage();});
 
     bool debug_mode = false;
     if (debug_mode)
