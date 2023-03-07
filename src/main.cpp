@@ -50,6 +50,14 @@ enum class BMSCommand
     Shutdown = 2
 };
 
+enum state
+{
+    OFF,
+    N,
+    DRIVE,
+    FDRIVE
+};
+
 // CAN Signal for BMS
 CANSignal<BMSState, 48, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> BMS_State{};
 
@@ -59,13 +67,10 @@ CANSignal<BMSCommand, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(
 
 CANTXMessage<1> BMS_command_message{can_bus, 0x242, 8, 100, read_timer, BMS_Command};
 
-enum state
-{
-    OFF,
-    N,
-    DRIVE,
-    FDRIVE
-};
+CANSignal<state, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> throttleStatus{};
+
+CANTXMessage<1> throttleStatus_message{can_bus, 0x100, 8, 100, read_timer, throttleStatus};
+
 
 state currentState = OFF;
 
@@ -105,6 +110,7 @@ void changeState()
             // if brake and button pressed, switch to N
             if (onswitch) {
                 currentState = N;
+                throttleStatus = state::N;
             }
             break;
         case N:
@@ -113,12 +119,14 @@ void changeState()
             if (BMS_State == BMSState::kActive) {
                 BMS_Command = BMSCommand::NoAction;
                 currentState = DRIVE;
+                throttleStatus = state::DRIVE;
             }
             // else
             else {
                 // if BMS fault, switch to off
                 if (BMS_State == BMSState::kFault) {
                     currentState = OFF;
+                    throttleStatus = state::OFF;
                 }
                 // else stay in N
             }
@@ -127,30 +135,36 @@ void changeState()
             // if pedals off by more than 10%, switch to N
             if (throttle.PotentiometersAgree() == false) {
                 currentState = N;
+                throttleStatus = state::N;
             }
             // listen to BMS status
             // if BMS fault, switch to off
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
+                throttleStatus = state::OFF;
                 break;
             }
             // if switch is off and speed > threshold, switch to fault drive
             if (onswitch && speed > threshold) {
                 currentState = FDRIVE;
+                throttleStatus = state::FDRIVE;
             }
             break;
         case FDRIVE:
             // if switch on, switch to drive
             if (onswitch) {
                 currentState = DRIVE;
+                throttleStatus = state::DRIVE;
             // if switch off and speed < threshold, switch to off
             } else if (speed < threshold) {
                 currentState = OFF;
+                throttleStatus = state::OFF;
             }
             // listen to BMS
             // if BMS fault, switch to off
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
+                throttleStatus = state::OFF;
             }
             break;
     }
