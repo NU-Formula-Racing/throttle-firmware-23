@@ -42,5 +42,6 @@ bool DoPotentiometersAgree(uint16_t left_acc_pos, uint16_t right_acc_pos)
  */
 bool BrakeAndAccelerator(uint16_t brake_position, uint16_t throttle_percent)
 {
-    return brake_position > 5 && throttle_percent > 0;
+    uint16_t minBrakPos = 5;
+    return brake_position > minBrakPos && throttle_percent > 0;
 }
