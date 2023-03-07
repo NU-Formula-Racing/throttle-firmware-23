@@ -39,7 +39,11 @@ void ReadAcceleratorPress()
     uint16_t throttle_percent = throttle.GetAcceleratorPress(
         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
     inverter.RequestTorque(throttle_percent);
-
+    float rpm = inverter.GetRPM();
+    uint16_t maxthrottlepercent = 80000/rpm;
+    if (throttle_percent > maxthrottlepercent) {
+        throttle_percent = maxthrottlepercent;
+    }
     bool debug_mode = true;
     if (debug_mode)
     {
