@@ -79,7 +79,6 @@ void Throttle::updateValues()
     const uint16_t MIN_VAL_RIGHT = 1450;
     const uint16_t MAX_VAL_RIGHT = 2050;
 
-
     const uint16_t MIN_VAL_BRAKE = 0;
     const uint16_t MAX_VAL_BRAKE = 1680;
 
@@ -106,7 +105,7 @@ void Throttle::updateValues()
    /*
     Serial.print("DoPotentiometersAgree:");
     Serial.println(DoPotentiometersAgree(left_acc_pos, right_acc_pos));
-    */
+   /*
 
     // right_acc_val, left_acc_val, brake_val are exact values from sensor (analogRead)
     // right_acc_pos, left_acc_pos, brake_pos will be a value from 0 to 100 -> allows for comparison because sensors
