@@ -34,8 +34,47 @@ CANSignal<float, 24, 16, CANTemplateConvertFloat(0.01), CANTemplateConvertFloat(
 // CANRXMessage
 CANRXMessage<2> amp_message{can_bus, 0x240, battery_amperage_signal, battery_voltage_signal};
 
+enum class BMSState
+{
+    kShutdown = 0,
+    kPrecharge = 1,
+    kActive = 2,
+    kCharging = 3,
+    kFault = 4
+};
 
-void ReadAcceleratorPress()
+enum class BMSCommand
+{
+    NoAction = 0,
+    PrechargeAndCloseContactors = 1,
+    Shutdown = 2
+};
+
+enum state
+{
+    OFF,
+    N,
+    DRIVE,
+    FDRIVE
+};
+
+// CAN Signal for BMS
+CANSignal<BMSState, 48, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> BMS_State{};
+
+CANRXMessage<1> BMS_message{can_bus, 0x241, BMS_State};
+
+CANSignal<BMSCommand, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> BMS_Command{};
+
+CANTXMessage<1> BMS_command_message{can_bus, 0x242, 8, 100, read_timer, BMS_Command};
+
+CANSignal<state, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> throttleStatus{};
+
+CANTXMessage<1> throttleStatus_message{can_bus, 0x100, 8, 100, read_timer, throttleStatus};
+
+
+state currentState = OFF;
+
+void RequestTorque()
 {
     uint16_t throttle_percent = throttle.GetAcceleratorPress(
         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
@@ -48,11 +87,9 @@ void ReadAcceleratorPress()
     bool debug_mode = true;
     if (debug_mode)
     {
-        /*
         Serial.print("cur_throttle_signal: ");
         Serial.println(throttle_percent);
         Serial.println("\n");
-        */
     }
 };
 
@@ -69,6 +106,98 @@ void printReceiveSignals()
 };
 
 
+void changeState()
+{
+    bool onswitch = true;
+    float threshold = 100;
+    float speed = inverter.GetRPM();
+    switch (currentState) {
+        case OFF:
+            // if brake and button pressed, switch to N
+            if (onswitch) {
+                currentState = N;
+                throttleStatus = state::N;
+            }
+            break;
+        case N:
+            // listen to BMS status
+            // if precharge is done, switch to drive
+            if (BMS_State == BMSState::kActive) {
+                BMS_Command = BMSCommand::NoAction;
+                currentState = DRIVE;
+                throttleStatus = state::DRIVE;
+            }
+            // else
+            else {
+                // if BMS fault, switch to off
+                if (BMS_State == BMSState::kFault) {
+                    currentState = OFF;
+                    throttleStatus = state::OFF;
+                }
+                // else stay in N
+            }
+            break;
+        case DRIVE:
+            // if pedals off by more than 10%, switch to N
+            if (throttle.PotentiometersAgree() == false) {
+                currentState = N;
+                throttleStatus = state::N;
+            }
+            // listen to BMS status
+            // if BMS fault, switch to off
+            if (BMS_State == BMSState::kFault) {
+                currentState = OFF;
+                throttleStatus = state::OFF;
+                break;
+            }
+            // if switch is off and speed > threshold, switch to fault drive
+            if (onswitch && speed > threshold) {
+                currentState = FDRIVE;
+                throttleStatus = state::FDRIVE;
+            }
+            break;
+        case FDRIVE:
+            // if switch on, switch to drive
+            if (onswitch) {
+                currentState = DRIVE;
+                throttleStatus = state::DRIVE;
+            // if switch off and speed < threshold, switch to off
+            } else if (speed < threshold) {
+                currentState = OFF;
+                throttleStatus = state::OFF;
+            }
+            // listen to BMS
+            // if BMS fault, switch to off
+            if (BMS_State == BMSState::kFault) {
+                currentState = OFF;
+                throttleStatus = state::OFF;
+            }
+            break;
+    }
+}
+
+void processState()
+{
+    switch (currentState) {
+        case OFF:
+            // do nothing
+            break;
+        case N:
+            // send message to BMS (BMS command message)
+            // PrechargeAndCloseContactors
+            BMS_Command = BMSCommand::PrechargeAndCloseContactors;
+            break;
+        case DRIVE:
+            // request torque based on pedal values
+            RequestTorque;
+            break;
+        case FDRIVE:
+            // request 0 torque
+            inverter.RequestTorque(0);
+            break;
+    }
+}
+
 void setup()
 {
 #ifdef SERIAL_DEBUG
@@ -80,7 +209,9 @@ void setup()
     can_bus.Initialize(ICAN::BaudRate::kBaud1M);
 
     // Initialize our timer(s)
-    read_timer.AddTimer(10, ReadAcceleratorPress);
+    read_timer.AddTimer(10, RequestTorque);
+    read_timer.AddTimer(10, changeState);
+    read_timer.AddTimer(10, processState);
     read_timer.AddTimer(1, []() {throttle.CalculateMovingAverage();});
     read_timer.AddTimer(1000, []() {Serial.println(analogRead(25));});
 

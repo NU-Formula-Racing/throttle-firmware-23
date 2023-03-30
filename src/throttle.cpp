@@ -150,6 +150,11 @@ void Throttle::updateValues()
 
 };
 
+bool Throttle::PotentiometersAgree()
+{
+    return DoPotentiometersAgree(left_acc_pos, right_acc_pos);
+}
+
 float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
 {
     // Use torque equation (includes power -> P = IV)
