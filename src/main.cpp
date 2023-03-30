@@ -34,12 +34,17 @@ CANSignal<float, 24, 16, CANTemplateConvertFloat(0.01), CANTemplateConvertFloat(
 // CANRXMessage
 CANRXMessage<2> amp_message{can_bus, 0x240, battery_amperage_signal, battery_voltage_signal};
 
+
 void ReadAcceleratorPress()
 {
     uint16_t throttle_percent = throttle.GetAcceleratorPress(
         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
+    float rpm = inverter.GetRPM();
+    // 332104 comes from power = 2*pi*rm*torque/60 and throttle_percent = torque/max_torque
+    // equations where max_torque = 230 N*m
+    uint16_t maxthrottlepercent = (332104/rpm);
+    throttle_percent = min(throttle_percent, maxthrottlepercent);
     inverter.RequestTorque(throttle_percent);
-
     bool debug_mode = true;
     if (debug_mode)
     {
