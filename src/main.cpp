@@ -22,7 +22,7 @@ ESPCAN can_bus{};
 VirtualTimerGroup read_timer;
 
 // Initialize board
-Throttle throttle;
+Throttle throttle{};    
 
 // Instantiate inverter
 Inverter inverter(can_bus);
@@ -78,6 +78,11 @@ void RequestTorque()
 {
     uint16_t throttle_percent = throttle.GetAcceleratorPress(
         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
+    float rpm = inverter.GetRPM();
+    // 332104 comes from power = 2*pi*rm*torque/60 and throttle_percent = torque/max_torque
+    // equations where max_torque = 230 N*m
+    uint16_t maxthrottlepercent = (332104/rpm);
+    throttle_percent = min(throttle_percent, maxthrottlepercent);
     inverter.RequestTorque(throttle_percent);
     bool debug_mode = true;
     if (debug_mode)
@@ -99,6 +104,7 @@ void printReceiveSignals()
     Serial.println((float)battery_voltage_signal);
     Serial.println("\n");
 };
+
 
 void changeState()
 {
@@ -203,10 +209,11 @@ void setup()
     can_bus.Initialize(ICAN::BaudRate::kBaud1M);
 
     // Initialize our timer(s)
-    // read_timer.AddTimer(10, RequestTorque);
+    read_timer.AddTimer(10, RequestTorque);
     read_timer.AddTimer(10, changeState);
     read_timer.AddTimer(10, processState);
-
+    read_timer.AddTimer(1, []() {throttle.CalculateMovingAverage();});
+    read_timer.AddTimer(1000, []() {Serial.println(analogRead(25));});
 
     bool debug_mode = false;
     if (debug_mode)
