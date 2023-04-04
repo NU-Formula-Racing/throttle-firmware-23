@@ -75,6 +75,8 @@ CANSignal<bool, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), fa
 
 CANRXMessage<1> on_message{can_bus, 0x100, on_switch};
 
+bool onButton = false;
+
 state currentState = OFF;
 
 void RequestTorque()
@@ -116,7 +118,7 @@ void changeState()
     switch (currentState) {
         case OFF:
             // if brake and button pressed, switch to N
-            if (on_switch) {
+            if (onButton) {
                 currentState = N;
                 throttleStatus = state::N;
             }
@@ -135,7 +137,7 @@ void changeState()
                 if (BMS_State == BMSState::kFault) {
                     currentState = OFF;
                     throttleStatus = state::OFF;
-                    on_switch = false;
+                    onButton = false;
                 }
                 // else stay in N
             }
@@ -151,18 +153,18 @@ void changeState()
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
-                on_switch = false;
+                onButton = false;
                 break;
             }
             // if switch is off and speed > threshold, switch to fault drive
-            if (on_switch == false && speed > threshold) {
+            if (onButton == false && speed > threshold) {
                 currentState = FDRIVE;
                 throttleStatus = state::FDRIVE;
             }
             break;
         case FDRIVE:
             // if switch on, switch to drive
-            if (on_switch) {
+            if (onButton) {
                 currentState = DRIVE;
                 throttleStatus = state::DRIVE;
             // if switch off and speed < threshold, switch to off
@@ -175,7 +177,7 @@ void changeState()
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
-                on_switch = false;
+                onButton = false;
             }
             break;
     }
@@ -239,6 +241,14 @@ void test()
     Serial.print("\n");
 }
 
+void turnOn() {
+    if (onButton) {
+        onButton = false;
+    } else {
+        onButton = true;
+    }
+}
+
 void setup()
 {
 #ifdef SERIAL_DEBUG
@@ -267,6 +277,9 @@ void setup()
     // Request values from inverter
     inverter.RequestMotorTemperature(100);
     inverter.RequestRPM(100);
+
+    // Set up interrupt
+    attachInterrupt(40, turnOn, FALLING);
 }
 
 void loop()
