@@ -173,7 +173,7 @@ void changeState()
                 currentState = DRIVE;
                 throttleStatus = state::DRIVE;
             // if switch off and speed < threshold, switch to off
-            } else if (speed < threshold) {
+            } else if (speed <= threshold) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
             }
