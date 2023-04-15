@@ -154,12 +154,17 @@ void changeState()
                 currentState = OFF;
                 throttleStatus = state::OFF;
                 onButton = false;
-                break;
             }
             // if switch is off and speed > threshold, switch to fault drive
-            if (onButton == false && speed > threshold) {
-                currentState = FDRIVE;
-                throttleStatus = state::FDRIVE;
+            if (onButton == false) {
+                if (speed >= threshold) {
+                    currentState = FDRIVE;
+                    throttleStatus = state::FDRIVE;
+                } else {
+                    currentState = OFF;
+                    throttleStatus = state::OFF;
+                    onButton = false;
+                }
             }
             break;
         case FDRIVE:
