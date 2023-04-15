@@ -42,6 +42,7 @@ class Throttle
         // Will be communicated to the CAN bus
         uint16_t cur_throttle_signal;
         float throttle_perc;
+        uint8_t max_torque = 230;
         std::vector<uint16_t> leftvalues;
         uint16_t leftaverage;
         std::vector<uint16_t> rightvalues;

@@ -59,7 +59,7 @@ enum state
 };
 
 // CAN Signal for BMS
-CANSignal<BMSState, 48, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> BMS_State{};
+CANSignal<BMSState, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> BMS_State{};
 
 CANRXMessage<1> BMS_message{can_bus, 0x241, BMS_State};
 
@@ -69,8 +69,11 @@ CANTXMessage<1> BMS_command_message{can_bus, 0x242, 8, 100, read_timer, BMS_Comm
 
 CANSignal<state, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> throttleStatus{};
 
-CANTXMessage<1> throttleStatus_message{can_bus, 0x100, 8, 100, read_timer, throttleStatus};
+CANTXMessage<1> throttleStatus_message{can_bus, 0x301, 8, 100, read_timer, throttleStatus};
 
+CANSignal<bool, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> on_switch{};
+
+CANRXMessage<1> on_message{can_bus, 0x100, on_switch};
 
 state currentState = OFF;
 
@@ -84,7 +87,7 @@ void RequestTorque()
     uint16_t maxthrottlepercent = (332104/rpm);
     throttle_percent = min(throttle_percent, maxthrottlepercent);
     inverter.RequestTorque(throttle_percent);
-    bool debug_mode = true;
+    bool debug_mode = false;
     if (debug_mode)
     {
         Serial.print("cur_throttle_signal: ");
@@ -108,13 +111,12 @@ void printReceiveSignals()
 
 void changeState()
 {
-    bool onswitch = true;
     float threshold = 100;
     float speed = inverter.GetRPM();
     switch (currentState) {
         case OFF:
             // if brake and button pressed, switch to N
-            if (onswitch) {
+            if (on_switch) {
                 currentState = N;
                 throttleStatus = state::N;
             }
@@ -122,7 +124,7 @@ void changeState()
         case N:
             // listen to BMS status
             // if precharge is done, switch to drive
-            if (BMS_State == BMSState::kActive) {
+            if (BMS_State == BMSState::kActive && throttle.PotentiometersAgree()) {
                 BMS_Command = BMSCommand::NoAction;
                 currentState = DRIVE;
                 throttleStatus = state::DRIVE;
@@ -133,6 +135,7 @@ void changeState()
                 if (BMS_State == BMSState::kFault) {
                     currentState = OFF;
                     throttleStatus = state::OFF;
+                    on_switch = false;
                 }
                 // else stay in N
             }
@@ -148,21 +151,22 @@ void changeState()
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
+                on_switch = false;
                 break;
             }
             // if switch is off and speed > threshold, switch to fault drive
-            if (onswitch && speed > threshold) {
+            if (on_switch == false && speed > threshold) {
                 currentState = FDRIVE;
                 throttleStatus = state::FDRIVE;
             }
             break;
         case FDRIVE:
             // if switch on, switch to drive
-            if (onswitch) {
+            if (on_switch) {
                 currentState = DRIVE;
                 throttleStatus = state::DRIVE;
             // if switch off and speed < threshold, switch to off
-            } else if (speed < threshold) {
+            } else if (speed <= threshold) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
             }
@@ -171,6 +175,7 @@ void changeState()
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
+                on_switch = false;
             }
             break;
     }
@@ -192,10 +197,46 @@ void processState()
             RequestTorque;
             break;
         case FDRIVE:
-            // request 0 torque
+            // request 0 torques
             inverter.RequestTorque(0);
             break;
     }
+}
+
+void test()
+{
+    // print current state
+    switch (currentState) {
+        case OFF:
+            Serial.print("State: OFF\n");
+            Serial.print("On: ");
+            Serial.print(on_switch);
+            Serial.print("\n");
+            break;
+        case N:
+            Serial.print("State: N\n");
+            Serial.print("On: ");
+            Serial.print(on_switch);
+            Serial.print("\n");
+            break;
+        case DRIVE:
+            Serial.print("State: DRIVE\n");
+            break;
+        case FDRIVE:
+            Serial.print("State: FDRIVE\n");
+            break;
+    }
+    // print throttle percent
+    uint16_t throttle_percent = throttle.GetAcceleratorPress(
+        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
+    Serial.print("Throttle percent: ");
+    Serial.println(throttle_percent);
+    Serial.print("\n");
+    // print speed
+    float speed = inverter.GetRPM();
+    Serial.print("Speed: ");
+    Serial.println(speed);
+    Serial.print("\n");
 }
 
 void setup()
@@ -209,11 +250,13 @@ void setup()
     can_bus.Initialize(ICAN::BaudRate::kBaud1M);
 
     // Initialize our timer(s)
-    read_timer.AddTimer(10, RequestTorque);
+    // read_timer.AddTimer(10, RequestTorque);
     read_timer.AddTimer(10, changeState);
     read_timer.AddTimer(10, processState);
     read_timer.AddTimer(1, []() {throttle.CalculateMovingAverage();});
-    read_timer.AddTimer(1000, []() {Serial.println(analogRead(25));});
+    // read_timer.AddTimer(1000, []() {Serial.println(analogRead(25));});
+    read_timer.AddTimer(500, test);
+
 
     bool debug_mode = false;
     if (debug_mode)
@@ -230,4 +273,5 @@ void loop()
 {
     delay(0);
     read_timer.Tick(millis());
+    can_bus.Tick();
 }

@@ -15,6 +15,7 @@ Throttle::Throttle()
     long left_acc_pos = 0;
     long right_acc_pos = 0;
     float throttle_perc = 0;
+    uint8_t max_torque = 230;
 
     // Derivative to measure change in right_acc_pos
 };
@@ -28,8 +29,10 @@ Throttle::Throttle()
 uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float batt_voltage, float rpm)
 {
     updateValues();
+    float max_motor_amp = 325;
+    float max_motor_torque_perc = .94 * max_motor_amp / max_torque;
     float motor_perc = motorPercent(motor_temp);
-    float torque_perc = min(convertBattAmp(batt_amp, batt_voltage, rpm), (float)100);
+    float torque_perc = min(convertBattAmp(batt_amp, batt_voltage, rpm), max_motor_torque_perc);
     return static_cast<uint16_t>(throttle_perc * motor_perc * torque_perc);
 
     // apply equation to convert the throttle's position (percent) to torque
@@ -166,7 +169,7 @@ float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
     }
 
     // map from 0 to 100 percent
-    return torque * 100 / 230;
+    return torque * 100 / max_torque;
 };
 
 float Throttle::motorPercent(float motor_temp)
