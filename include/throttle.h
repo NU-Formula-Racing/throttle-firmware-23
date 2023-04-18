@@ -21,6 +21,12 @@ class Throttle
         // Calculates moving average
         void CalculateMovingAverage();
 
+        // mappings
+        float lin_throttle_perc(float throttle_perc);
+        float expon_throttle_perc(float throttle_perc);
+        float log_throttle_perc(float throttle_perc);
+        float bens_special_throttle_perc(float throttle_perc);
+
         // Updates fields of Throttle
         void updateValues();
 
@@ -31,6 +37,14 @@ class Throttle
 
         // Converts motor temperature into a percentage of torque
         float motorPercent (float motor_temp);
+
+        bool brakePressed ();
+
+        uint8_t GetBrakePercentage();
+
+        uint16_t GetLeftAccPos();
+
+        uint16_t GetRightAccPos();
 
     private:
         //// Might not need all of these private fields
