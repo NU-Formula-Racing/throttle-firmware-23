@@ -250,12 +250,13 @@ void test()
     Serial.print("\n");
     // print throttle percent
     Serial.print("Throttle percent: ");
-    Serial.println(throttle.GetAcceleratorPress(
-        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
+    // Serial.println(throttle.GetAcceleratorPress(
+    //     inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
+    Serial.print(accel_perc);
     Serial.print("\n");
     // print brake percent
     Serial.print("Brake percent: ");
-    Serial.println(brake_perc);
+    Serial.print(brake_perc);
     Serial.print("\n");
     // print speed
     // float speed = inverter.GetRPM();
@@ -265,10 +266,10 @@ void test()
     throttle.updateValues();
     // print left and right values
     Serial.print("Left Accelerator: ");
-    Serial.println(throttle.GetLeftAccPos());
+    Serial.print(throttle.GetLeftAccPos());
     Serial.print("\n");
     Serial.print("Right Accelerator: ");
-    Serial.println(throttle.GetRightAccPos());
+    Serial.print(throttle.GetRightAccPos());
     Serial.print("\n");
     // print if Potentiometers Agree
     Serial.print("Potentiometers: ");

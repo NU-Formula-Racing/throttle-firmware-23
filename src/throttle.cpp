@@ -50,6 +50,7 @@ void Throttle::CalculateMovingAverage()
         leftvalues.push_back(left_acc_val);
     }
     leftaverage = accumulate(leftvalues.begin(), leftvalues.end(), 0.0) / leftvalues.size();
+    
     const uint16_t ACC_SENSOR_RIGHT = 36;
     uint16_t right_acc_val = analogRead(ACC_SENSOR_RIGHT);
     if (rightvalues.size() < 10) {
@@ -59,6 +60,16 @@ void Throttle::CalculateMovingAverage()
         rightvalues.push_back(right_acc_val);
     }
     rightaverage = accumulate(rightvalues.begin(), rightvalues.end(), 0.0) / rightvalues.size();
+
+    const uint16_t BRAKE_SENSOR = 25;
+    uint16_t brake_val = analogRead(BRAKE_SENSOR);
+    if (brakevalues.size() < 10) {
+        brakevalues.push_back(brake_val);
+    } else {
+        brakevalues.erase(brakevalues.begin());
+        brakevalues.push_back(brake_val);
+    }
+    brakeaverage = accumulate(brakevalues.begin(), brakevalues.end(), 0.0) / brakevalues.size();
 };
 
 // mappings
@@ -133,8 +144,8 @@ void Throttle::updateValues()
     const uint16_t MIN_VAL_RIGHT = 1450;
     const uint16_t MAX_VAL_RIGHT = 2050;
 
-    const uint16_t MIN_VAL_BRAKE = 1040;
-    const uint16_t MAX_VAL_BRAKE = 1340;
+    const uint16_t MIN_VAL_BRAKE = 1700;
+    const uint16_t MAX_VAL_BRAKE = 1900;
 
 
     // Serial.print("left_acc_val:");
@@ -175,15 +186,15 @@ void Throttle::updateValues()
     right_acc_pos = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
 
     // TODO: Uncomment once brake sensor is hooked up
-    uint16_t brake_val = max(analogRead(BRAKE_SENSOR), MIN_VAL_BRAKE);
+    uint16_t brake_val = max(brakeaverage, MIN_VAL_BRAKE);
     brake_val = min(brake_val, MAX_VAL_BRAKE);
     brake_pos = SensorValueToPercentage(brake_val, MIN_VAL_BRAKE, MAX_VAL_BRAKE);
     // Serial.print("brake pos:");
     // Serial.println(brake_pos);
 
     // When we have all 3 sensors:
-    float throttle_percent = (right_acc_pos + left_acc_pos) / 200.0;
-    if (BrakeAndAccelerator(brake_pos, throttle_percent) || !DoPotentiometersAgree(right_acc_pos, left_acc_pos))
+    uint16_t throttle_percent = (right_acc_pos + left_acc_pos) / 2;
+    if (BrakeAndAccelerator(brake_pos, throttle_percent) || !DoPotentiometersAgree(left_acc_pos, right_acc_pos))
     {
         throttle_percent = 0;
     }
@@ -195,7 +206,7 @@ void Throttle::updateValues()
     // }
 
     // Set throttle position sensor value (0-1)
-    throttle_perc = 100 * throttle_percent;
+    throttle_perc = throttle_percent;
     // throttle_perc = 100 * bens_special_throttle_perc(throttle_percent);
 
     // Serial.print("Do potentiometers agree:");
@@ -223,7 +234,7 @@ float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
     }
 
     // map from 0 to 100 percent
-    return torque * 100 / max_torque;
+    return torque / max_torque;
 };
 
 float Throttle::motorPercent(float motor_temp)
@@ -250,9 +261,9 @@ bool Throttle::brakePressed()
 uint8_t Throttle::GetBrakePercentage()
 {
     const uint16_t BRAKE_SENSOR = 25;
-    const uint16_t MIN_VAL_BRAKE = 1040;
-    const uint16_t MAX_VAL_BRAKE = 1340;
-    uint16_t brake_val = max(analogRead(BRAKE_SENSOR), MIN_VAL_BRAKE);
+    const uint16_t MIN_VAL_BRAKE = 1700;
+    const uint16_t MAX_VAL_BRAKE = 1900;
+    uint16_t brake_val = max(brakeaverage, MIN_VAL_BRAKE);
     brake_val = min(brake_val, MAX_VAL_BRAKE);
     brake_pos = SensorValueToPercentage(brake_val, MIN_VAL_BRAKE, MAX_VAL_BRAKE);
     // Serial.println(brake_pos);
@@ -275,7 +286,7 @@ uint16_t Throttle::GetRightAccPos()
     const uint16_t ACC_SENSOR_RIGHT = 36;
     const uint16_t MIN_VAL_RIGHT = 1450;
     const uint16_t MAX_VAL_RIGHT = 2050;
-    uint16_t right_acc_val = max(leftaverage, MIN_VAL_RIGHT);
+    uint16_t right_acc_val = max(rightaverage, MIN_VAL_RIGHT);
     right_acc_val = min(right_acc_val, MAX_VAL_RIGHT);
     right_acc_pos = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
     return right_acc_pos;

@@ -61,4 +61,6 @@ class Throttle
         uint16_t leftaverage;
         std::vector<uint16_t> rightvalues;
         uint16_t rightaverage;
+        std::vector<uint16_t> brakevalues;
+        uint16_t brakeaverage;
 };
