@@ -87,13 +87,12 @@ state currentState = OFF;
 
 void RequestTorque()
 {
+    float rpm = abs(inverter.GetRPM());
     uint16_t throttle_percent = throttle.GetAcceleratorPress(
-        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
-    // Serial.println(throttle_percent);
-    float rpm = inverter.GetRPM();
-    // 332104 comes from power = 2*pi*rm*torque/60 and throttle_percent = torque/max_torque
-    // equations where max_torque = 230 N*m
-    uint16_t maxthrottlepercent = (332104/max(0.01f, rpm));
+        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, rpm);
+    // 332149 comes from power = 2*pi*rpm*torque/60 and throttle_percent = torque/max_torque
+    // equations where max_torque = 230 N*m, max_power = 80 kW
+    uint16_t maxthrottlepercent = (332149/max(0.01f, rpm));
     throttle_percent = min(throttle_percent, maxthrottlepercent);
     accel_perc = throttle_percent;
     inverter.RequestTorque(throttle_percent);
@@ -121,7 +120,7 @@ void printReceiveSignals()
 
 void changeState()
 {
-    float threshold = 100;
+    float threshold = 150;
     float speed = inverter.GetRPM();
     switch (currentState) {
         case OFF:
@@ -204,15 +203,18 @@ void changeState()
 
 void processState()
 {
+    throttle.updateValues();
     brake_perc = throttle.GetBrakePercentage();
     switch (currentState) {
         case OFF:
             // do nothing
+            inverter.RequestTorque(0);
             break;
         case N:
             // send message to BMS (BMS command message)
             // PrechargeAndCloseContactors
             BMS_Command = BMSCommand::PrechargeAndCloseContactors;
+            inverter.RequestTorque(0);
             break;
         case DRIVE:
             // request torque based on pedal values
@@ -228,53 +230,16 @@ void processState()
 void test()
 {
     // print current state
-    switch (currentState) {
-        case OFF:
-            Serial.print("State: OFF\n");
-            break;
-        case N:
-            Serial.print("State: N\n");
-            break;
-        case DRIVE:
-            Serial.print("State: DRIVE\n");
-            break;
-        case FDRIVE:
-            Serial.print("State: FDRIVE\n");
-            break;
-    }
-    Serial.print("On: ");
-    Serial.print(onButton);
-    Serial.print("\n");
-    Serial.print("Brake: ");
-    Serial.print(throttle.brakePressed());
-    Serial.print("\n");
-    // print throttle percent
-    Serial.print("Throttle percent: ");
-    // Serial.println(throttle.GetAcceleratorPress(
-    //     inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
-    Serial.print(accel_perc);
-    Serial.print("\n");
-    // print brake percent
-    Serial.print("Brake percent: ");
-    Serial.print(brake_perc);
-    Serial.print("\n");
-    // print speed
-    // float speed = inverter.GetRPM();
-    // Serial.print("Speed: ");
-    // Serial.println(speed);
-    // Serial.print("\n");
-    throttle.updateValues();
-    // print left and right values
-    Serial.print("Left Accelerator: ");
-    Serial.print(throttle.GetLeftAccPos());
-    Serial.print("\n");
-    Serial.print("Right Accelerator: ");
-    Serial.print(throttle.GetRightAccPos());
-    Serial.print("\n");
-    // print if Potentiometers Agree
-    Serial.print("Potentiometers: ");
-    Serial.print(throttle.PotentiometersAgree());
-    Serial.print("\n");
+    Serial.println(currentState);
+    Serial.println(throttle.GetLeftAccPos());
+    Serial.println(throttle.GetRightAccPos());
+    Serial.println(throttle.GetAcceleratorPress(
+        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
+    Serial.println(battery_amperage_signal);
+    Serial.println(battery_voltage_signal);
+    Serial.println(inverter.GetRPM());
+    float torque_perc = min(throttle.convertBattAmp(battery_amperage_signal, battery_voltage_signal, abs(inverter.GetRPM())), (float)1);
+    Serial.println(torque_perc);
 }
 
 void turnOn() {
@@ -300,7 +265,6 @@ void setup()
     read_timer.AddTimer(10, changeState);
     read_timer.AddTimer(10, processState);
     read_timer.AddTimer(1, []() {throttle.CalculateMovingAverage();});
-    // read_timer.AddTimer(1000, []() {Serial.println(analogRead(25));});
     read_timer.AddTimer(500, test);
 
 
