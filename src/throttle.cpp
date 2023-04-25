@@ -239,8 +239,8 @@ uint16_t Throttle::GetLeftAccPos()
     const uint16_t MAX_VAL_LEFT = 2000;
     uint16_t left_acc_val = max(leftaverage, MIN_VAL_LEFT);
     left_acc_val = min(left_acc_val, MAX_VAL_LEFT);
-    left_acc_pos = SensorValueToPercentage(left_acc_val, MIN_VAL_LEFT, MAX_VAL_LEFT);
-    return left_acc_pos;
+    uint16_t left_acc_perc = SensorValueToPercentage(left_acc_val, MIN_VAL_LEFT, MAX_VAL_LEFT);
+    return left_acc_perc;
 }
 
 uint16_t Throttle::GetRightAccPos()
@@ -250,6 +250,12 @@ uint16_t Throttle::GetRightAccPos()
     const uint16_t MAX_VAL_RIGHT = 2050;
     uint16_t right_acc_val = max(rightaverage, MIN_VAL_RIGHT);
     right_acc_val = min(right_acc_val, MAX_VAL_RIGHT);
-    right_acc_pos = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
-    return right_acc_pos;
+    uint16_t right_acc_perc = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
+    return right_acc_perc;
+}
+
+uint16_t Throttle::GetAccPos()
+{
+    uint16_t acc_perc = (GetLeftAccPos() + GetRightAccPos()) / 2;
+    return acc_perc;
 }
