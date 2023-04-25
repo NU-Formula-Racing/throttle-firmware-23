@@ -46,6 +46,8 @@ class Throttle
 
         uint16_t GetRightAccPos();
 
+        uint16_t GetAccPos();
+
     private:
         //// Might not need all of these private fields
 

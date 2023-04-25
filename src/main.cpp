@@ -81,7 +81,7 @@ CANSignal<uint8_t, 8, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0),
 
 CANTXMessage<2> accel_brake_message{can_bus, 0x300, 2, 10, read_timer, accel_perc, brake_perc};
 
-bool onButton = false;
+bool driveButton = false;
 
 state currentState = OFF;
 
@@ -94,7 +94,6 @@ void RequestTorque()
     // equations where max_torque = 230 N*m, max_power = 80 kW
     uint16_t maxthrottlepercent = (332149/max(0.01f, rpm));
     throttle_percent = min(throttle_percent, maxthrottlepercent);
-    accel_perc = throttle_percent;
     inverter.RequestTorque(throttle_percent);
     bool debug_mode = false;
     if (debug_mode)
@@ -124,35 +123,24 @@ void changeState()
     float speed = inverter.GetRPM();
     switch (currentState) {
         case OFF:
-            // if brake and button pressed, switch to N
-            if (onButton && throttle.brakePressed()) {
+            // If BMS is active, switch to N
+            if (BMS_State == BMSState::kActive) {
                 currentState = N;
                 throttleStatus = state::N;
             }
             break;
         case N:
-            // if button pressed, switch to OFF
-            if (onButton == false) {
-                currentState = OFF;
-                throttleStatus = state::OFF;
-                onButton = false;
-            }
-            // listen to BMS status
-            // if precharge is done, switch to drive
-            if (BMS_State == BMSState::kActive && throttle.PotentiometersAgree()) {
+            // if drive button and brake pressed and potentiometers agree, switch to DRIVE
+            if (throttle.brakePressed() && driveButton && throttle.PotentiometersAgree()) {
                 BMS_Command = BMSCommand::NoAction;
                 currentState = DRIVE;
                 throttleStatus = state::DRIVE;
             }
-            // else
-            else {
-                // if BMS fault, switch to off
-                if (BMS_State == BMSState::kFault) {
-                    currentState = OFF;
-                    throttleStatus = state::OFF;
-                    onButton = false;
-                }
-                // else stay in N
+            // if there is a fault, switch to fault
+            if (BMS_State == BMSState::kFault) {
+                currentState = OFF;
+                throttleStatus = state::OFF;
+                driveButton = false;
             }
             break;
         case DRIVE:
@@ -166,36 +154,35 @@ void changeState()
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
-                onButton = false;
+                driveButton = false;
             }
-            // if switch is off and speed > threshold, switch to fault drive
-            if (onButton == false) {
+            // if drive button is off and speed > threshold, switch to fault drive
+            if (driveButton == false) {
                 if (speed >= threshold) {
                     currentState = FDRIVE;
                     throttleStatus = state::FDRIVE;
                 } else {
-                    currentState = OFF;
-                    throttleStatus = state::OFF;
-                    onButton = false;
+                    currentState = N;
+                    throttleStatus = state::N;
                 }
             }
             break;
         case FDRIVE:
             // if switch on, switch to drive
-            if (onButton) {
+            if (driveButton) {
                 currentState = DRIVE;
                 throttleStatus = state::DRIVE;
-            // if switch off and speed < threshold, switch to off
+            // if switch off and speed < threshold, switch to N
             } else if (speed <= threshold) {
-                currentState = OFF;
-                throttleStatus = state::OFF;
+                currentState = N;
+                throttleStatus = state::N;
             }
             // listen to BMS
             // if BMS fault, switch to off
             if (BMS_State == BMSState::kFault) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
-                onButton = false;
+                driveButton = false;
             }
             break;
     }
@@ -204,6 +191,7 @@ void changeState()
 void processState()
 {
     throttle.updateValues();
+    accel_perc = throttle.GetAccPos();
     brake_perc = throttle.GetBrakePercentage();
     switch (currentState) {
         case OFF:
@@ -243,10 +231,10 @@ void test()
 }
 
 void turnOn() {
-    if (onButton) {
-        onButton = false;
+    if (driveButton) {
+        driveButton = false;
     } else {
-        onButton = true;
+        driveButton = true;
     }
 }
 
