@@ -48,6 +48,10 @@ class Throttle
 
         uint16_t GetAccPos();
 
+        uint8_t GetMaxAvailableTorque();
+
+        bool to3V3orGND();
+
     private:
         //// Might not need all of these private fields
 
@@ -65,4 +69,9 @@ class Throttle
         uint16_t rightaverage;
         std::vector<uint16_t> brakevalues;
         uint16_t brakeaverage;
+        uint8_t max_available_torque;
+        uint16_t brakethreshold;
+        uint16_t leftthreshold;
+        uint16_t rightthreshold;
+        bool wasBrakePressed;
 };

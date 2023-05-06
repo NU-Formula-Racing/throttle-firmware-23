@@ -6,17 +6,9 @@
 
 #define SERIAL_DEBUG
 
-#if defined(ARDUINO_TEENSY40) || defined(ARDUINO_TEENSY41)
-#include "teensy_can.h"
-// The bus number is a template argument for Teensy: TeensyCAN<bus_num>
-TeensyCAN<1> can_bus{};
-#endif
-
-#ifdef ARDUINO_ARCH_ESP32
 #include "esp_can.h"
 // The tx and rx pins are constructor arguments to ESPCan, which default to TX = 5, RX = 4
-ESPCAN can_bus{};
-#endif
+ESPCAN can_bus{10, gpio_num_t::GPIO_NUM_22, gpio_num_t::GPIO_NUM_21};
 
 // Structure for handling timers
 VirtualTimerGroup read_timer;
@@ -79,7 +71,9 @@ CANSignal<uint8_t, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0),
 
 CANSignal<uint8_t, 8, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> brake_perc{};
 
-CANTXMessage<2> accel_brake_message{can_bus, 0x300, 2, 10, read_timer, accel_perc, brake_perc};
+CANSignal<uint8_t, 16, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> maxavailabletorque{};
+
+CANTXMessage<3> accel_brake_torque_message{can_bus, 0x300, 3, 10, read_timer, accel_perc, brake_perc, maxavailabletorque};
 
 bool driveButton = false;
 
@@ -193,6 +187,7 @@ void processState()
     throttle.updateValues();
     accel_perc = throttle.GetAccPos();
     brake_perc = throttle.GetBrakePercentage();
+    maxavailabletorque = throttle.GetMaxAvailableTorque();
     switch (currentState) {
         case OFF:
             // do nothing
@@ -219,15 +214,15 @@ void test()
 {
     // print current state
     Serial.println(currentState);
-    Serial.println(throttle.GetLeftAccPos());
-    Serial.println(throttle.GetRightAccPos());
-    Serial.println(throttle.GetAcceleratorPress(
-        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
-    Serial.println(battery_amperage_signal);
-    Serial.println(battery_voltage_signal);
-    Serial.println(inverter.GetRPM());
-    float torque_perc = min(throttle.convertBattAmp(battery_amperage_signal, battery_voltage_signal, abs(inverter.GetRPM())), (float)1);
-    Serial.println(torque_perc);
+    // Serial.println(throttle.GetLeftAccPos());
+    // Serial.println(throttle.GetRightAccPos());
+    // Serial.println(throttle.GetAcceleratorPress(
+    //     inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
+    // Serial.println(battery_amperage_signal);
+    // Serial.println(battery_voltage_signal);
+    // Serial.println(inverter.GetRPM());
+    // float torque_perc = min(throttle.convertBattAmp(battery_amperage_signal, battery_voltage_signal, abs(inverter.GetRPM())), (float)1);
+    // Serial.println(torque_perc);
 }
 
 void turnOn() {
