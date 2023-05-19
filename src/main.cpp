@@ -131,7 +131,7 @@ void changeState()
                 throttleStatus = state::DRIVE;
             }
             // if there is a fault, switch to fault
-            if (BMS_State == BMSState::kFault) {
+            if (BMS_State == BMSState::kFault || BMS_State == BMSState::kShutdown) {
                 currentState = OFF;
                 throttleStatus = state::OFF;
                 driveButton = false;
@@ -139,7 +139,7 @@ void changeState()
             break;
         case DRIVE:
             // if pedals off by more than 10%, switch to N
-            if (throttle.PotentiometersAgree() == false) {
+            if (!throttle.PotentiometersAgree() || (throttle.GetBrakePercentage() > 5 && throttle.GetAccPos() > 0) || throttle.to3V3orGND()) {
                 currentState = N;
                 throttleStatus = state::N;
             }
@@ -213,16 +213,27 @@ void processState()
 void test()
 {
     // print current state
-    Serial.println(currentState);
+    // Serial.println(currentState);
+    Serial.print(analogRead(36));
+    Serial.print(",");
+    Serial.print(analogRead(35));
+    Serial.print("\n");
+    // Serial.println(analogRead(39));
     // Serial.println(throttle.GetLeftAccPos());
     // Serial.println(throttle.GetRightAccPos());
-    // Serial.println(throttle.GetAcceleratorPress(
+    // Serial.println(throttle.GetBrakePercentage());
+    // Serial.println(throttle.PotentiometersAgree());
+    // // Serial.println(throttle.GetAcceleratorPress(
     //     inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
-    // Serial.println(battery_amperage_signal);
+    // // Serial.println(battery_amperage_signal);
     // Serial.println(battery_voltage_signal);
     // Serial.println(inverter.GetRPM());
     // float torque_perc = min(throttle.convertBattAmp(battery_amperage_signal, battery_voltage_signal, abs(inverter.GetRPM())), (float)1);
     // Serial.println(torque_perc);
+    // Serial.println(driveButton);
+    // Serial.println(throttle.PotentiometersAgree());
+    // Serial.println(brake_perc);
+    // Serial.println(accel_perc);
 }
 
 void turnOn() {
@@ -262,7 +273,9 @@ void setup()
     inverter.RequestRPM(100);
 
     // Set up interrupt
-    attachInterrupt(17, turnOn, FALLING);
+    attachInterrupt(23, turnOn, FALLING);
+    pinMode(13, OUTPUT);
+    digitalWrite(13, LOW);
 }
 
 void loop()

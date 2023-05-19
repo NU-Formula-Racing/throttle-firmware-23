@@ -186,11 +186,6 @@ void Throttle::updateValues()
         wasBrakePressed = true;
     }
 
-    if (BrakeAndAccelerator(brake_pos, throttle_percent) || !DoPotentiometersAgree(left_acc_pos, right_acc_pos) || to3V3orGND())
-    {
-        throttle_percent = 0;
-    }
-
     // Set throttle position sensor value (0-1)
     throttle_perc = 100 * bens_special_throttle_perc(throttle_percent / 100.0);
 
@@ -246,8 +241,8 @@ bool Throttle::brakePressed()
 uint8_t Throttle::GetBrakePercentage()
 {
     const uint16_t BRAKE_SENSOR = 39;
-    const uint16_t MIN_VAL_BRAKE = 1700;
-    const uint16_t MAX_VAL_BRAKE = 1900;
+    const uint16_t MIN_VAL_BRAKE = 2300;
+    const uint16_t MAX_VAL_BRAKE = 2500;
     uint16_t brake_val = max(brakeaverage, MIN_VAL_BRAKE);
     brake_val = min(brake_val, MAX_VAL_BRAKE);
     brake_pos = SensorValueToPercentage(brake_val, MIN_VAL_BRAKE, MAX_VAL_BRAKE);
@@ -257,8 +252,8 @@ uint8_t Throttle::GetBrakePercentage()
 uint16_t Throttle::GetLeftAccPos()
 {
     const uint16_t ACC_SENSOR_LEFT = 34;
-    const uint16_t MIN_VAL_LEFT = 1500;
-    const uint16_t MAX_VAL_LEFT = 2000;
+    const uint16_t MIN_VAL_LEFT = 1280;
+    const uint16_t MAX_VAL_LEFT = 1430;
     uint16_t left_acc_val = max(leftaverage, MIN_VAL_LEFT);
     left_acc_val = min(left_acc_val, MAX_VAL_LEFT);
     uint16_t left_acc_perc = SensorValueToPercentage(left_acc_val, MIN_VAL_LEFT, MAX_VAL_LEFT);
@@ -268,8 +263,8 @@ uint16_t Throttle::GetLeftAccPos()
 uint16_t Throttle::GetRightAccPos()
 {
     const uint16_t ACC_SENSOR_RIGHT = 35;
-    const uint16_t MIN_VAL_RIGHT = 1450;
-    const uint16_t MAX_VAL_RIGHT = 2050;
+    const uint16_t MIN_VAL_RIGHT = 1500;
+    const uint16_t MAX_VAL_RIGHT = 1940;
     uint16_t right_acc_val = max(rightaverage, MIN_VAL_RIGHT);
     right_acc_val = min(right_acc_val, MAX_VAL_RIGHT);
     uint16_t right_acc_perc = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
