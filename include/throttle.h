@@ -70,8 +70,5 @@ class Throttle
         std::vector<uint16_t> brakevalues;
         uint16_t brakeaverage;
         uint8_t max_available_torque;
-        uint16_t brakethreshold;
-        uint16_t leftthreshold;
-        uint16_t rightthreshold;
         bool wasBrakePressed;
 };

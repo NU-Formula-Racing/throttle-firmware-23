@@ -138,11 +138,6 @@ void changeState()
             }
             break;
         case DRIVE:
-            // if pedals off by more than 10%, switch to N
-            if (!throttle.PotentiometersAgree() || (throttle.GetBrakePercentage() > 5 && throttle.GetAccPos() > 0) || throttle.to3V3orGND()) {
-                currentState = N;
-                throttleStatus = state::N;
-            }
             // listen to BMS status
             // if BMS fault, switch to off
             if (BMS_State == BMSState::kFault) {
@@ -213,16 +208,18 @@ void processState()
 void test()
 {
     // print current state
-    // Serial.println(currentState);
-    Serial.print(analogRead(36));
-    Serial.print(",");
-    Serial.print(analogRead(35));
-    Serial.print("\n");
+    Serial.println(currentState);
+    // Serial.print(analogRead(34));
+    // Serial.print(",");
+    // Serial.print(analogRead(35));
+    // Serial.print("\n");
+    // Serial.println(analogRead(39));
     // Serial.println(analogRead(39));
     // Serial.println(throttle.GetLeftAccPos());
     // Serial.println(throttle.GetRightAccPos());
     // Serial.println(throttle.GetBrakePercentage());
-    // Serial.println(throttle.PotentiometersAgree());
+    Serial.println(throttle.PotentiometersAgree());
+    Serial.println(throttle.to3V3orGND());
     // // Serial.println(throttle.GetAcceleratorPress(
     //     inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
     // // Serial.println(battery_amperage_signal);
@@ -230,10 +227,12 @@ void test()
     // Serial.println(inverter.GetRPM());
     // float torque_perc = min(throttle.convertBattAmp(battery_amperage_signal, battery_voltage_signal, abs(inverter.GetRPM())), (float)1);
     // Serial.println(torque_perc);
-    // Serial.println(driveButton);
+    Serial.println(driveButton);
     // Serial.println(throttle.PotentiometersAgree());
-    // Serial.println(brake_perc);
-    // Serial.println(accel_perc);
+    Serial.println(brake_perc);
+    Serial.println(accel_perc);
+    Serial.println(throttle.GetAcceleratorPress(
+        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
 }
 
 void turnOn() {
