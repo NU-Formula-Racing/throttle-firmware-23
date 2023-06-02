@@ -186,12 +186,13 @@ void processState()
     switch (currentState) {
         case OFF:
             // do nothing
+            BMS_Command = BMSCommand::PrechargeAndCloseContactors;
             inverter.RequestTorque(0);
             break;
         case N:
             // send message to BMS (BMS command message)
             // PrechargeAndCloseContactors
-            BMS_Command = BMSCommand::PrechargeAndCloseContactors;
+            BMS_Command = BMSCommand::NoAction;
             inverter.RequestTorque(0);
             break;
         case DRIVE:

@@ -38,7 +38,7 @@ uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float b
     // Serial.println(motor_perc);
     // Serial.println(torque_perc);
     max_available_torque = 100*motor_perc * torque_perc;
-    return static_cast<uint16_t>(throttle_perc * motor_perc * torque_perc);
+    return min(static_cast<uint16_t>(throttle_perc * motor_perc * torque_perc),static_cast<uint16_t>(100));
 
     // apply equation to convert the throttle's position (percent) to torque
     // uint16_t torque = min(exp(0.06 * (throttle_percent - 9)), 230.0);
@@ -226,7 +226,7 @@ float Throttle::motorPercent(float motor_temp)
     }
     else if (motor_temp < 115)
     {
-        return 1 - (1 / 20) * (motor_temp - 95);
+        return 1 - (1 / 20.0) * (motor_temp - 95);
     }
     else
     {
@@ -289,5 +289,6 @@ bool Throttle::to3V3orGND()
     uint16_t brakethreshold = 3000;
     uint16_t leftthreshold = 2500;
     uint16_t rightthreshold = 2500;
-    return (brakeaverage > brakethreshold || leftaverage > leftthreshold || rightaverage > rightthreshold);
+    uint16_t brakeGND = 1500;
+    return (brakeaverage > brakethreshold || leftaverage > leftthreshold || rightaverage > rightthreshold || brakeaverage < brakeGND);
 }
