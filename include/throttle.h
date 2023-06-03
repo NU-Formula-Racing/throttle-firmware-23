@@ -48,7 +48,7 @@ class Throttle
 
         uint16_t GetAccPos();
 
-        uint8_t GetMaxAvailableTorque();
+        uint8_t GetMaxAvailableTorquePercent();
 
         bool to3V3orGND();
 
@@ -68,7 +68,7 @@ class Throttle
         uint16_t rightaverage;
         std::vector<uint16_t> brakevalues;
         uint16_t brakeaverage;
-        uint8_t max_available_torque;
+        uint8_t max_available_torque_perc;
         bool wasBrakePressed;
         const uint8_t max_torque = 230;
         const uint16_t ACC_SENSOR_LEFT = 34;

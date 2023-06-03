@@ -15,7 +15,7 @@ Throttle::Throttle()
     long left_acc_pos = 0;
     long right_acc_pos = 0;
     float throttle_perc = 0;
-    uint8_t max_available_torque = 100;
+    uint8_t max_available_torque_perc = 100;
     bool wasBrakePressed = false;
 };
 
@@ -31,8 +31,8 @@ uint16_t Throttle::GetThrottlePercent(float motor_temp, float batt_amp, float ba
     float max_motor_torque_perc = .94 * max_motor_amp / max_torque;
     float motor_perc = motorPercent(motor_temp);
     float torque_perc = min(convertBattAmp(batt_amp, batt_voltage, rpm), max_motor_torque_perc);
-    max_available_torque = 100*motor_perc * torque_perc;
-    return min(static_cast<uint16_t>(throttle_perc * motor_perc * torque_perc),static_cast<uint16_t>(100));
+    max_available_torque_perc = min(100*motor_perc * torque_perc,static_cast<float>(100));
+    return static_cast<uint16_t>(throttle_perc * max_available_torque_perc / 100);
 };
 
 void Throttle::CalculateMovingAverage()
@@ -216,9 +216,9 @@ uint16_t Throttle::GetAccPos()
     return acc_perc;
 }
 
-uint8_t Throttle::GetMaxAvailableTorque()
+uint8_t Throttle::GetMaxAvailableTorquePercent()
 {
-    return max_available_torque;
+    return max_available_torque_perc;
 }
 
 // Check if APPS1, APPS2, or brake signal goes to 3V3 (if goes to GND, 0 throttle automatically)

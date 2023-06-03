@@ -71,10 +71,10 @@ CANSignal<uint8_t, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0),
 
 CANSignal<uint8_t, 8, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> brake_perc{};
 
-CANSignal<uint8_t, 16, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> maxavailabletorque{};
+CANSignal<uint8_t, 16, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> maxavailabletorqueperc{};
 
 CANTXMessage<3> accel_brake_torque_message{
-    can_bus, 0x300, 3, 10, read_timer, accel_perc, brake_perc, maxavailabletorque};
+    can_bus, 0x300, 3, 10, read_timer, accel_perc, brake_perc, maxavailabletorqueperc};
 
 bool driveButton = false;
 
@@ -195,7 +195,7 @@ void processState()
     throttle.updateValues();
     accel_perc = throttle.GetAccPos();
     brake_perc = throttle.GetBrakePercentage();
-    maxavailabletorque = throttle.GetMaxAvailableTorque();
+    maxavailabletorqueperc = throttle.GetMaxAvailableTorquePercent();
     switch (currentState)
     {
         case OFF:
