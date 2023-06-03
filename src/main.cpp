@@ -222,28 +222,10 @@ void processState()
 
 void test()
 {
-    // print current state
     Serial.println(currentState);
-    // Serial.print(analogRead(34));
-    // Serial.print(",");
-    // Serial.print(analogRead(35));
-    // Serial.print("\n");
-    // Serial.println(analogRead(39));
-    // Serial.println(analogRead(39));
-    // Serial.println(throttle.GetLeftAccPos());
-    // Serial.println(throttle.GetRightAccPos());
-    // Serial.println(throttle.GetBrakePercentage());
     Serial.println(throttle.PotentiometersAgree());
     Serial.println(throttle.to3V3orGND());
-    // // Serial.println(throttle.GetAcceleratorPress(
-    //     inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
-    // // Serial.println(battery_amperage_signal);
-    // Serial.println(battery_voltage_signal);
-    // Serial.println(inverter.GetRPM());
-    // float torque_perc = min(throttle.convertBattAmp(battery_amperage_signal, battery_voltage_signal,
-    // abs(inverter.GetRPM())), (float)1); Serial.println(torque_perc);
     Serial.println(driveButton);
-    // Serial.println(throttle.PotentiometersAgree());
     Serial.println(brake_perc);
     Serial.println(accel_perc);
     Serial.println(throttle.GetAcceleratorPress(
@@ -277,12 +259,12 @@ void setup()
     read_timer.AddTimer(10, changeState);
     read_timer.AddTimer(10, processState);
     read_timer.AddTimer(1, []() { throttle.CalculateMovingAverage(); });
-    read_timer.AddTimer(500, test);
 
     bool debug_mode = false;
     if (debug_mode)
     {
         read_timer.AddTimer(100, printReceiveSignals);
+        read_timer.AddTimer(500, test);
     }
 
     // Request values from inverter
