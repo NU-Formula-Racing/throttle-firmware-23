@@ -15,11 +15,8 @@ Throttle::Throttle()
     long left_acc_pos = 0;
     long right_acc_pos = 0;
     float throttle_perc = 0;
-    uint8_t max_torque = 230;
     uint8_t max_available_torque = 100;
     bool wasBrakePressed = false;
-
-    // Derivative to measure change in right_acc_pos
 };
 
 /**
@@ -28,10 +25,9 @@ Throttle::Throttle()
  *
  * @return uint16_t
  */
-uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float batt_voltage, float rpm)
+uint16_t Throttle::GetThrottlePercent(float motor_temp, float batt_amp, float batt_voltage, float rpm)
 {
     updateValues();
-    float max_motor_amp = 325;
     float max_motor_torque_perc = .94 * max_motor_amp / max_torque;
     float motor_perc = motorPercent(motor_temp);
     float torque_perc = min(convertBattAmp(batt_amp, batt_voltage, rpm), max_motor_torque_perc);
@@ -41,7 +37,6 @@ uint16_t Throttle::GetAcceleratorPress(float motor_temp, float batt_amp, float b
 
 void Throttle::CalculateMovingAverage()
 {
-    const uint16_t ACC_SENSOR_LEFT = 34;
     uint16_t left_acc_val = analogRead(ACC_SENSOR_LEFT);
     if (leftvalues.size() < 10) {
         leftvalues.push_back(left_acc_val);
@@ -51,7 +46,6 @@ void Throttle::CalculateMovingAverage()
     }
     leftaverage = accumulate(leftvalues.begin(), leftvalues.end(), 0.0) / leftvalues.size();
     
-    const uint16_t ACC_SENSOR_RIGHT = 35;
     uint16_t right_acc_val = analogRead(ACC_SENSOR_RIGHT);
     if (rightvalues.size() < 10) {
         rightvalues.push_back(right_acc_val);
@@ -61,7 +55,6 @@ void Throttle::CalculateMovingAverage()
     }
     rightaverage = accumulate(rightvalues.begin(), rightvalues.end(), 0.0) / rightvalues.size();
 
-    const uint16_t BRAKE_SENSOR = 39;
     uint16_t brake_val = analogRead(BRAKE_SENSOR);
     if (brakevalues.size() < 10) {
         brakevalues.push_back(brake_val);
@@ -161,7 +154,7 @@ bool Throttle::PotentiometersAgree()
 float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
 {
     // Use torque equation (includes power -> P = IV)
-    float torque = 230;
+    float torque = max_torque;
 
     if (rpm != 0)
     {
@@ -195,9 +188,6 @@ bool Throttle::brakePressed()
 
 uint8_t Throttle::GetBrakePercentage()
 {
-    const uint16_t BRAKE_SENSOR = 39;
-    const uint16_t MIN_VAL_BRAKE = 2300;
-    const uint16_t MAX_VAL_BRAKE = 2500;
     uint16_t brake_val = max(brakeaverage, MIN_VAL_BRAKE);
     brake_val = min(brake_val, MAX_VAL_BRAKE);
     brake_pos = SensorValueToPercentage(brake_val, MIN_VAL_BRAKE, MAX_VAL_BRAKE);
@@ -206,9 +196,6 @@ uint8_t Throttle::GetBrakePercentage()
 
 uint16_t Throttle::GetLeftAccPos()
 {
-    const uint16_t ACC_SENSOR_LEFT = 34;
-    const uint16_t MIN_VAL_LEFT = 1300;
-    const uint16_t MAX_VAL_LEFT = 1630;
     uint16_t left_acc_val = max(leftaverage, MIN_VAL_LEFT);
     left_acc_val = min(left_acc_val, MAX_VAL_LEFT);
     uint16_t left_acc_perc = SensorValueToPercentage(left_acc_val, MIN_VAL_LEFT, MAX_VAL_LEFT);
@@ -217,9 +204,6 @@ uint16_t Throttle::GetLeftAccPos()
 
 uint16_t Throttle::GetRightAccPos()
 {
-    const uint16_t ACC_SENSOR_RIGHT = 35;
-    const uint16_t MIN_VAL_RIGHT = 1490;
-    const uint16_t MAX_VAL_RIGHT = 1930;
     uint16_t right_acc_val = max(rightaverage, MIN_VAL_RIGHT);
     right_acc_val = min(right_acc_val, MAX_VAL_RIGHT);
     uint16_t right_acc_perc = SensorValueToPercentage(right_acc_val, MIN_VAL_RIGHT, MAX_VAL_RIGHT);
@@ -240,9 +224,5 @@ uint8_t Throttle::GetMaxAvailableTorque()
 // Check if APPS1, APPS2, or brake signal goes to 3V3 (if goes to GND, 0 throttle automatically)
 bool Throttle::to3V3orGND()
 {
-    uint16_t brakethreshold = 3000;
-    uint16_t leftthreshold = 2500;
-    uint16_t rightthreshold = 2500;
-    uint16_t brakeGND = 1500;
     return (brakeaverage > brakethreshold || leftaverage > leftthreshold || rightaverage > rightthreshold || brakeaverage < brakeGND);
 }

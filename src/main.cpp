@@ -90,7 +90,7 @@ void RequestTorque()
         Serial.println("\n");
     }
     float rpm = abs(inverter.GetRPM());
-    uint16_t throttle_percent = throttle.GetAcceleratorPress(
+    uint16_t throttle_percent = throttle.GetThrottlePercent(
         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, rpm);
     // 332149 comes from power = 2*pi*rpm*torque/60 and throttle_percent = torque/max_torque
     // equations where max_torque = 230 N*m, max_power = 80 kW
@@ -228,7 +228,7 @@ void test()
     Serial.println(driveButton);
     Serial.println(brake_perc);
     Serial.println(accel_perc);
-    Serial.println(throttle.GetAcceleratorPress(
+    Serial.println(throttle.GetThrottlePercent(
         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
 }
 
