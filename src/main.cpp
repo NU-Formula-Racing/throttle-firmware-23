@@ -6,29 +6,21 @@
 
 #define SERIAL_DEBUG
 
-#if defined(ARDUINO_TEENSY40) || defined(ARDUINO_TEENSY41)
-#include "teensy_can.h"
-// The bus number is a template argument for Teensy: TeensyCAN<bus_num>
-TeensyCAN<1> can_bus{};
-#endif
-
-#ifdef ARDUINO_ARCH_ESP32
 #include "esp_can.h"
 // The tx and rx pins are constructor arguments to ESPCan, which default to TX = 5, RX = 4
-ESPCAN can_bus{};
-#endif
+ESPCAN can_bus{10, gpio_num_t::GPIO_NUM_22, gpio_num_t::GPIO_NUM_21};
 
 // Structure for handling timers
 VirtualTimerGroup read_timer;
 
 // Initialize board
-Throttle throttle{};    
+Throttle throttle{};
 
 // Instantiate inverter
 Inverter inverter(can_bus);
 
 // TX CAN Signal for battery amperage and voltage
-CANSignal<float, 48, 16, CANTemplateConvertFloat(0.01), CANTemplateConvertFloat(0), false> battery_amperage_signal{};
+CANSignal<float, 0, 12, CANTemplateConvertFloat(0.1), CANTemplateConvertFloat(0), false> battery_amperage_signal{};
 CANSignal<float, 24, 16, CANTemplateConvertFloat(0.01), CANTemplateConvertFloat(0), false> battery_voltage_signal{};
 
 // CANRXMessage
@@ -75,27 +67,36 @@ CANSignal<bool, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), fa
 
 CANRXMessage<1> on_message{can_bus, 0x100, on_switch};
 
-bool onButton = false;
+CANSignal<uint8_t, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> accel_perc{};
+
+CANSignal<uint8_t, 8, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> brake_perc{};
+
+CANSignal<uint8_t, 16, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> maxavailabletorqueperc{};
+
+CANTXMessage<3> accel_brake_torque_message{
+    can_bus, 0x300, 3, 10, read_timer, accel_perc, brake_perc, maxavailabletorqueperc};
+
+bool driveButton = false;
 
 state currentState = OFF;
 
 void RequestTorque()
 {
-    uint16_t throttle_percent = throttle.GetAcceleratorPress(
-        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
-    float rpm = inverter.GetRPM();
-    // 332104 comes from power = 2*pi*rm*torque/60 and throttle_percent = torque/max_torque
-    // equations where max_torque = 230 N*m
-    uint16_t maxthrottlepercent = (332104/rpm);
-    throttle_percent = min(throttle_percent, maxthrottlepercent);
-    inverter.RequestTorque(throttle_percent);
     bool debug_mode = false;
     if (debug_mode)
     {
-        Serial.print("cur_throttle_signal: ");
-        Serial.println(throttle_percent);
+        Serial.print("batt amp signal: ");
+        Serial.println(battery_amperage_signal.value_ref());
         Serial.println("\n");
     }
+    float rpm = abs(inverter.GetRPM());
+    uint16_t throttle_percent = throttle.GetThrottlePercent(
+        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, rpm);
+    // 332149 comes from power = 2*pi*rpm*torque/60 and throttle_percent = torque/max_torque
+    // equations where max_torque = 230 N*m, max_power = 80 kW
+    uint16_t maxthrottlepercent = (332149 / max(0.01f, rpm));
+    throttle_percent = min(throttle_percent, maxthrottlepercent);
+    inverter.RequestTorque(throttle_percent);
 };
 
 void printReceiveSignals()
@@ -110,79 +111,80 @@ void printReceiveSignals()
     Serial.println("\n");
 };
 
-
 void changeState()
 {
-    float threshold = 100;
+    float threshold = 150;
     float speed = inverter.GetRPM();
-    switch (currentState) {
+    switch (currentState)
+    {
         case OFF:
-            // if brake and button pressed, switch to N
-            if (onButton) {
+            // If BMS is active, switch to N
+            if (BMS_State == BMSState::kActive)
+            {
                 currentState = N;
                 throttleStatus = state::N;
             }
             break;
         case N:
-            // listen to BMS status
-            // if precharge is done, switch to drive
-            if (BMS_State == BMSState::kActive && throttle.PotentiometersAgree()) {
+            // if drive button and brake pressed and potentiometers agree, switch to DRIVE
+            if (throttle.brakePressed() && driveButton && throttle.PotentiometersAgree())
+            {
                 BMS_Command = BMSCommand::NoAction;
                 currentState = DRIVE;
                 throttleStatus = state::DRIVE;
             }
-            // else
-            else {
-                // if BMS fault, switch to off
-                if (BMS_State == BMSState::kFault) {
-                    currentState = OFF;
-                    throttleStatus = state::OFF;
-                    onButton = false;
-                }
-                // else stay in N
+            // if there is a fault, switch to fault
+            if (BMS_State == BMSState::kFault || BMS_State == BMSState::kShutdown)
+            {
+                currentState = OFF;
+                throttleStatus = state::OFF;
+                driveButton = false;
             }
             break;
         case DRIVE:
-            // if pedals off by more than 10%, switch to N
-            if (throttle.PotentiometersAgree() == false) {
-                currentState = N;
-                throttleStatus = state::N;
-            }
             // listen to BMS status
             // if BMS fault, switch to off
-            if (BMS_State == BMSState::kFault) {
+            if (BMS_State != BMSState::kActive)
+            {
                 currentState = OFF;
                 throttleStatus = state::OFF;
-                onButton = false;
+                driveButton = false;
             }
-            // if switch is off and speed > threshold, switch to fault drive
-            if (onButton == false) {
-                if (speed >= threshold) {
+            // if drive button is off and speed > threshold, switch to fault drive
+            if (driveButton == false)
+            {
+                if (speed >= threshold)
+                {
                     currentState = FDRIVE;
                     throttleStatus = state::FDRIVE;
-                } else {
-                    currentState = OFF;
-                    throttleStatus = state::OFF;
-                    onButton = false;
+                }
+                else
+                {
+                    currentState = N;
+                    throttleStatus = state::N;
                 }
             }
             break;
         case FDRIVE:
             // if switch on, switch to drive
-            if (onButton) {
+            if (driveButton)
+            {
                 currentState = DRIVE;
                 throttleStatus = state::DRIVE;
-            // if switch off and speed < threshold, switch to off
-            } else if (speed <= threshold) {
-                currentState = OFF;
-                throttleStatus = state::OFF;
+                // if switch off and speed < threshold, switch to N
+            }
+            else if (speed <= threshold)
+            {
+                currentState = N;
+                throttleStatus = state::N;
             }
             // listen to BMS
             // if BMS fault, switch to off
-            if (BMS_State == BMSState::kFault) {
+            if (BMS_State == BMSState::kFault)
+            {
                 currentState = OFF;
                 throttleStatus = state::OFF;
-                onButton = false;
+                driveButton = false;
             }
             break;
     }
@@ -190,21 +192,29 @@ void changeState()
 
 void processState()
 {
-    switch (currentState) {
+    throttle.updateValues();
+    accel_perc = throttle.GetAccPos();
+    brake_perc = throttle.GetBrakePercentage();
+    maxavailabletorqueperc = throttle.GetMaxAvailableTorquePercent();
+    switch (currentState)
+    {
         case OFF:
             // do nothing
+            BMS_Command = BMSCommand::PrechargeAndCloseContactors;
+            inverter.RequestTorque(0);
             break;
         case N:
             // send message to BMS (BMS command message)
             // PrechargeAndCloseContactors
-            BMS_Command = BMSCommand::PrechargeAndCloseContactors;
+            BMS_Command = BMSCommand::NoAction;
+            inverter.RequestTorque(0);
             break;
         case DRIVE:
             // request torque based on pedal values
-            RequestTorque;
+            RequestTorque();
             break;
         case FDRIVE:
-            // request 0 torques
+            // request 0 torque
             inverter.RequestTorque(0);
             break;
     }
@@ -212,45 +222,25 @@ void processState()
 
 void test()
 {
-    // print current state
-    switch (currentState) {
-        case OFF:
-            Serial.print("State: OFF\n");
-            Serial.print("On: ");
-            Serial.print(on_switch);
-            Serial.print("\n");
-            break;
-        case N:
-            Serial.print("State: N\n");
-            Serial.print("On: ");
-            Serial.print(on_switch);
-            Serial.print("\n");
-            break;
-        case DRIVE:
-            Serial.print("State: DRIVE\n");
-            break;
-        case FDRIVE:
-            Serial.print("State: FDRIVE\n");
-            break;
-    }
-    // print throttle percent
-    uint16_t throttle_percent = throttle.GetAcceleratorPress(
-        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM());
-    Serial.print("Throttle percent: ");
-    Serial.println(throttle_percent);
-    Serial.print("\n");
-    // print speed
-    float speed = inverter.GetRPM();
-    Serial.print("Speed: ");
-    Serial.println(speed);
-    Serial.print("\n");
+    Serial.println(currentState);
+    Serial.println(throttle.PotentiometersAgree());
+    Serial.println(throttle.to3V3orGND());
+    Serial.println(driveButton);
+    Serial.println(brake_perc);
+    Serial.println(accel_perc);
+    Serial.println(throttle.GetThrottlePercent(
+        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
 }
 
-void turnOn() {
-    if (onButton) {
-        onButton = false;
-    } else {
-        onButton = true;
+void turnOn()
+{
+    if (driveButton)
+    {
+        driveButton = false;
+    }
+    else
+    {
+        driveButton = true;
     }
 }
 
@@ -268,15 +258,13 @@ void setup()
     // read_timer.AddTimer(10, RequestTorque);
     read_timer.AddTimer(10, changeState);
     read_timer.AddTimer(10, processState);
-    read_timer.AddTimer(1, []() {throttle.CalculateMovingAverage();});
-    // read_timer.AddTimer(1000, []() {Serial.println(analogRead(25));});
-    read_timer.AddTimer(500, test);
-
+    read_timer.AddTimer(1, []() { throttle.CalculateMovingAverage(); });
 
     bool debug_mode = false;
     if (debug_mode)
     {
         read_timer.AddTimer(100, printReceiveSignals);
+        read_timer.AddTimer(500, test);
     }
 
     // Request values from inverter
@@ -284,7 +272,9 @@ void setup()
     inverter.RequestRPM(100);
 
     // Set up interrupt
-    attachInterrupt(40, turnOn, FALLING);
+    attachInterrupt(23, turnOn, FALLING);
+    pinMode(13, OUTPUT);
+    digitalWrite(13, LOW);
 }
 
 void loop()
