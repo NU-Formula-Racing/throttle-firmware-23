@@ -195,7 +195,7 @@ void processState()
     throttle.updateValues();
     accel_perc = throttle.GetAccPos();
     brake_perc = throttle.GetBrakePercentage();
-    maxavailabletorqueperc = throttle.GetMaxAvailableTorquePercent();
+    maxavailabletorqueperc = 0;
     switch (currentState)
     {
         case OFF:
@@ -212,6 +212,7 @@ void processState()
         case DRIVE:
             // request torque based on pedal values
             RequestTorque();
+            maxavailabletorqueperc = throttle.GetMaxAvailableTorquePercent();
             break;
         case FDRIVE:
             // request 0 torque
@@ -222,14 +223,19 @@ void processState()
 
 void test()
 {
-    Serial.println(currentState);
-    Serial.println(throttle.PotentiometersAgree());
-    Serial.println(throttle.to3V3orGND());
-    Serial.println(driveButton);
-    Serial.println(brake_perc);
-    Serial.println(accel_perc);
-    Serial.println(throttle.GetThrottlePercent(
-        inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
+    Serial.printf("currentState:%d \n", currentState);
+    Serial.printf("PotentiometersAgree:%d \n", throttle.PotentiometersAgree());
+    Serial.printf("to3V3orGND:%d \n", throttle.to3V3orGND());
+    Serial.printf("driveButton:%d \n", driveButton);
+    Serial.printf("brake_perc:%d \n", static_cast<uint8_t>(brake_perc));
+    Serial.printf("accel_perc:%d \n", static_cast<uint8_t>(accel_perc));
+    Serial.printf(
+        "torque request:%d \n",
+        throttle.GetThrottlePercent(
+            inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
+    Serial.printf("left sensor: %i \n", analogRead(34));
+    Serial.printf("right sensor: %i \n", analogRead(35));
+    Serial.printf("brake sensor: %i \n", analogRead(39));
 }
 
 void turnOn()
@@ -260,11 +266,11 @@ void setup()
     read_timer.AddTimer(10, processState);
     read_timer.AddTimer(1, []() { throttle.CalculateMovingAverage(); });
 
-    bool debug_mode = false;
+    bool debug_mode = true;
     if (debug_mode)
     {
-        read_timer.AddTimer(100, printReceiveSignals);
-        read_timer.AddTimer(500, test);
+        // read_timer.AddTimer(100, printReceiveSignals);
+        read_timer.AddTimer(1000, test);
     }
 
     // Request values from inverter
