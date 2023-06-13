@@ -31,34 +31,43 @@ uint16_t Throttle::GetThrottlePercent(float motor_temp, float batt_amp, float ba
     float max_motor_torque_perc = .94 * max_motor_amp / max_torque;
     float motor_perc = motorPercent(motor_temp);
     float torque_perc = min(convertBattAmp(batt_amp, batt_voltage, rpm), max_motor_torque_perc);
-    max_available_torque_perc = min(100*motor_perc * torque_perc,static_cast<float>(100));
+    max_available_torque_perc = min(100 * motor_perc * torque_perc, static_cast<float>(100));
     return static_cast<uint16_t>(throttle_perc * max_available_torque_perc / 100);
 };
 
 void Throttle::CalculateMovingAverage()
 {
     uint16_t left_acc_val = analogRead(ACC_SENSOR_LEFT);
-    if (leftvalues.size() < 10) {
+    if (leftvalues.size() < 10)
+    {
         leftvalues.push_back(left_acc_val);
-    } else {
+    }
+    else
+    {
         leftvalues.erase(leftvalues.begin());
         leftvalues.push_back(left_acc_val);
     }
     leftaverage = accumulate(leftvalues.begin(), leftvalues.end(), 0.0) / leftvalues.size();
-    
+
     uint16_t right_acc_val = analogRead(ACC_SENSOR_RIGHT);
-    if (rightvalues.size() < 10) {
+    if (rightvalues.size() < 10)
+    {
         rightvalues.push_back(right_acc_val);
-    } else {
+    }
+    else
+    {
         rightvalues.erase(rightvalues.begin());
         rightvalues.push_back(right_acc_val);
     }
     rightaverage = accumulate(rightvalues.begin(), rightvalues.end(), 0.0) / rightvalues.size();
 
     uint16_t brake_val = analogRead(BRAKE_SENSOR);
-    if (brakevalues.size() < 10) {
+    if (brakevalues.size() < 10)
+    {
         brakevalues.push_back(brake_val);
-    } else {
+    }
+    else
+    {
         brakevalues.erase(brakevalues.begin());
         brakevalues.push_back(brake_val);
     }
@@ -66,52 +75,60 @@ void Throttle::CalculateMovingAverage()
 };
 
 // mappings
-float Throttle::lin_throttle_perc(float throttle_perc)
-{
-    return throttle_perc;
-};
+float Throttle::lin_throttle_perc(float throttle_perc) { return throttle_perc; };
 
 float Throttle::expon_throttle_perc(float throttle_perc)
 {
-    if(throttle_perc <= 0.05 ){
+    if (throttle_perc <= 0.05)
+    {
         return 0;
     }
-    else if(throttle_perc >= 0.05 && throttle_perc <= 1){
+    else if (throttle_perc >= 0.05 && throttle_perc <= 1)
+    {
         return (-1.1245 * throttle_perc * throttle_perc + 2.23369 * throttle_perc - 0.10918);
     }
-    else{
+    else
+    {
         return 1;
     }
 };
 
 float Throttle::log_throttle_perc(float throttle_perc)
 {
-    if(throttle_perc <= 0.05 ){
+    if (throttle_perc <= 0.05)
+    {
         return 0;
     }
-    else if(throttle_perc >= 0.05 && throttle_perc <= 1){
+    else if (throttle_perc >= 0.05 && throttle_perc <= 1)
+    {
         return (1.42401 * log10(4.27866 * throttle_perc + 0.776984));
     }
-    else{
+    else
+    {
         return 1;
     }
 };
 
 float Throttle::bens_special_throttle_perc(float throttle_perc)
 {
-    if(throttle_perc < 0.05){
+    if (throttle_perc < 0.05)
+    {
         return 0;
     }
-    else if(throttle_perc >= 0.05 && throttle_perc < 0.15){
-        return (8 * throttle_perc * throttle_perc + 0.4 * throttle_perc - 0.04); //exponetial section
+    else if (throttle_perc >= 0.05 && throttle_perc < 0.15)
+    {
+        return (8 * throttle_perc * throttle_perc + 0.4 * throttle_perc - 0.04);  // exponetial section
     }
-    else if(throttle_perc >= 0.15 && throttle_perc < 0.3){
-        return (2.634 * throttle_perc - 0.1951); // linear section
+    else if (throttle_perc >= 0.15 && throttle_perc < 0.3)
+    {
+        return (2.634 * throttle_perc - 0.1951);  // linear section
     }
-    else if(throttle_perc >= 0.3 && throttle_perc <= 0.98){
-        return (0.7878 * log10(18.85 * throttle_perc + 0.0381)); // log section
+    else if (throttle_perc >= 0.3 && throttle_perc <= 0.98)
+    {
+        return (0.7878 * log10(18.85 * throttle_perc + 0.0381));  // log section
     }
-    else{
+    else
+    {
         return 1;
     }
 };
@@ -123,22 +140,37 @@ void Throttle::updateValues()
     left_acc_pos = GetLeftAccPos();
     right_acc_pos = GetRightAccPos();
     brake_pos = GetBrakePercentage();
-    
+
+    // Set faults to 0 first
+    release_accel_fault = 0;
+
     uint16_t throttle_percent = GetAccPos();
-    
-    if (BrakeAndAccelerator(brake_pos, throttle_percent)) {
+
+    if (BrakeAndAccelerator(brake_pos, throttle_percent))
+    {
         wasBrakePressed = true;
     }
 
-    if (wasBrakePressed) {
-        if (throttle_percent > 5) {
+    if (wasBrakePressed)
+    {
+        if (throttle_percent > 5)
+        {
             throttle_percent = 0;
-        } else {
+            release_accel_fault = 1;
+        }
+        else
+        {
             wasBrakePressed = false;
         }
     }
 
-    if (!DoPotentiometersAgree(left_acc_pos, right_acc_pos) || to3V3orGND()) {
+    if (!DoPotentiometersAgree(left_acc_pos, right_acc_pos))
+    {
+        throttle_percent = 0;
+    }
+
+    if (to3V3orGND())
+    {
         throttle_percent = 0;
     }
 
@@ -146,10 +178,13 @@ void Throttle::updateValues()
     throttle_perc = 100 * bens_special_throttle_perc(throttle_percent / 100.0);
 };
 
-bool Throttle::PotentiometersAgree()
+void Throttle::UpdateFaults()
 {
-    return DoPotentiometersAgree(left_acc_pos, right_acc_pos);
+    potentiometer_fault = !DoPotentiometersAgree(left_acc_pos, right_acc_pos) ? 1 : 0;
+    gnd_3v3_fault = to3V3orGND() ? 1 : 0;
 }
+
+bool Throttle::PotentiometersAgree() { return DoPotentiometersAgree(left_acc_pos, right_acc_pos); }
 
 float Throttle::convertBattAmp(float batt_amp, float batt_voltage, float rpm)
 {
@@ -181,10 +216,7 @@ float Throttle::motorPercent(float motor_temp)
     }
 };
 
-bool Throttle::brakePressed()
-{
-    return brake_pos > 5;
-};
+bool Throttle::brakePressed() { return brake_pos > 5; };
 
 uint8_t Throttle::GetBrakePercentage()
 {
@@ -216,13 +248,11 @@ uint16_t Throttle::GetAccPos()
     return acc_perc;
 }
 
-uint8_t Throttle::GetMaxAvailableTorquePercent()
-{
-    return max_available_torque_perc;
-}
+uint8_t Throttle::GetMaxAvailableTorquePercent() { return max_available_torque_perc; }
 
 // Check if APPS1, APPS2, or brake signal goes to 3V3 (if goes to GND, 0 throttle automatically)
 bool Throttle::to3V3orGND()
 {
-    return (brakeaverage > brakethreshold || leftaverage > leftthreshold || rightaverage > rightthreshold || brakeaverage < brakeGND);
+    return (brakeaverage > brakethreshold || leftaverage > leftthreshold || rightaverage > rightthreshold
+            || brakeaverage < brakeGND);
 }

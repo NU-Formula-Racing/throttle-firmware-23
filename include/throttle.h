@@ -53,9 +53,19 @@ public:
 
     bool to3V3orGND();
 
+    bool potentiometer_fault = 0;
+
+    bool gnd_3v3_fault = 0;
+
+    bool release_accel_fault = 0;
+
+    void UpdateFaults();
+    uint16_t leftaverage;
+    uint16_t rightaverage;
+    uint16_t brakeaverage;
+
 private:
     //// Might not need all of these private fields
-
     long brake_pos;
     // Both potentiometer voltages must be within a threshold
     long left_acc_pos;
@@ -64,26 +74,26 @@ private:
     uint16_t cur_throttle_signal;
     float throttle_perc;
     std::vector<uint16_t> leftvalues;
-    uint16_t leftaverage;
+
     std::vector<uint16_t> rightvalues;
-    uint16_t rightaverage;
+
     std::vector<uint16_t> brakevalues;
-    uint16_t brakeaverage;
+
     uint8_t max_available_torque_perc;
     bool wasBrakePressed;
     const uint8_t max_torque = 230;
     const uint16_t ACC_SENSOR_LEFT = 34;
-    const uint16_t MIN_VAL_LEFT = 2570;
-    const uint16_t MAX_VAL_LEFT = 3200;
+    const uint16_t MIN_VAL_LEFT = 2770;
+    const uint16_t MAX_VAL_LEFT = 3430;
     const uint16_t ACC_SENSOR_RIGHT = 35;
-    const uint16_t MIN_VAL_RIGHT = 2420;
-    const uint16_t MAX_VAL_RIGHT = 3350;
+    const uint16_t MIN_VAL_RIGHT = 2640;
+    const uint16_t MAX_VAL_RIGHT = 3540;
     const uint16_t BRAKE_SENSOR = 39;
     const uint16_t MIN_VAL_BRAKE = 2200;
-    const uint16_t MAX_VAL_BRAKE = 3100;
-    const uint16_t brakethreshold = 3300;
-    const uint16_t leftthreshold = 3400;
-    const uint16_t rightthreshold = 3400;
-    const uint16_t brakeGND = 1500;
+    const uint16_t MAX_VAL_BRAKE = 3260;
+    const uint16_t brakethreshold = 3500;
+    const uint16_t leftthreshold = 3600;
+    const uint16_t rightthreshold = 3800;
+    const uint16_t brakeGND = 1000;
     const float max_motor_amp = 325;
 };

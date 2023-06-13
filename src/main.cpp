@@ -60,8 +60,12 @@ CANSignal<BMSCommand, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(
 CANTXMessage<1> BMS_command_message{can_bus, 0x242, 8, 100, read_timer, BMS_Command};
 
 CANSignal<state, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> throttleStatus{};
+CANSignal<bool, 8, 1, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> releaseAccelFault{};
+CANSignal<bool, 9, 1, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> potentiometerFault{};
+CANSignal<bool, 10, 1, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> gnd3v3Fault{};
 
-CANTXMessage<1> throttleStatus_message{can_bus, 0x301, 8, 100, read_timer, throttleStatus};
+CANTXMessage<4> throttleStatus_message{
+    can_bus, 0x301, 2, 100, read_timer, throttleStatus, releaseAccelFault, potentiometerFault, gnd3v3Fault};
 
 CANSignal<bool, 0, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> on_switch{};
 
@@ -73,14 +77,21 @@ CANSignal<uint8_t, 8, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0),
 
 CANSignal<uint8_t, 16, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> maxavailabletorqueperc{};
 
-CANTXMessage<3> accel_brake_torque_message{
-    can_bus, 0x300, 3, 10, read_timer, accel_perc, brake_perc, maxavailabletorqueperc};
+CANSignal<uint8_t, 24, 8, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0), false> requestedtorqueperc{};
+
+CANTXMessage<4> accel_brake_torque_message{
+    can_bus, 0x300, 4, 10, read_timer, accel_perc, brake_perc, maxavailabletorqueperc, requestedtorqueperc};
+
+CANSignal<uint16_t, 0, 16, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0)> left_ADC{};
+CANSignal<uint16_t, 16, 16, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0)> right_ADC{};
+CANSignal<uint16_t, 32, 16, CANTemplateConvertFloat(1), CANTemplateConvertFloat(0)> brake_ADC{};
+CANTXMessage<3> adc_value_message{can_bus, 0x302, 6, 10, read_timer, left_ADC, right_ADC, brake_ADC};
 
 bool driveButton = false;
 
 state currentState = OFF;
 
-void RequestTorque()
+uint16_t RequestTorque()
 {
     bool debug_mode = false;
     if (debug_mode)
@@ -97,6 +108,7 @@ void RequestTorque()
     uint16_t maxthrottlepercent = (332149 / max(0.01f, rpm));
     throttle_percent = min(throttle_percent, maxthrottlepercent);
     inverter.RequestTorque(throttle_percent);
+    return throttle_percent;
 };
 
 void printReceiveSignals()
@@ -113,7 +125,7 @@ void printReceiveSignals()
 
 void changeState()
 {
-    float threshold = 150;
+    float threshold = 200;
     float speed = inverter.GetRPM();
     switch (currentState)
     {
@@ -196,6 +208,13 @@ void processState()
     accel_perc = throttle.GetAccPos();
     brake_perc = throttle.GetBrakePercentage();
     maxavailabletorqueperc = 0;
+    requestedtorqueperc = 0;
+
+    // handle faults
+    throttle.UpdateFaults();
+    // releaseAccelFault = throttle.release_accel_fault;
+    potentiometerFault = throttle.potentiometer_fault;
+    gnd3v3Fault = throttle.gnd_3v3_fault;
     switch (currentState)
     {
         case OFF:
@@ -211,7 +230,7 @@ void processState()
             break;
         case DRIVE:
             // request torque based on pedal values
-            RequestTorque();
+            requestedtorqueperc = RequestTorque();
             maxavailabletorqueperc = throttle.GetMaxAvailableTorquePercent();
             break;
         case FDRIVE:
@@ -223,19 +242,22 @@ void processState()
 
 void test()
 {
-    Serial.printf("currentState:%d \n", currentState);
-    Serial.printf("PotentiometersAgree:%d \n", throttle.PotentiometersAgree());
-    Serial.printf("to3V3orGND:%d \n", throttle.to3V3orGND());
-    Serial.printf("driveButton:%d \n", driveButton);
-    Serial.printf("brake_perc:%d \n", static_cast<uint8_t>(brake_perc));
-    Serial.printf("accel_perc:%d \n", static_cast<uint8_t>(accel_perc));
-    Serial.printf(
-        "torque request:%d \n",
-        throttle.GetThrottlePercent(
-            inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
-    Serial.printf("left sensor: %i \n", analogRead(34));
-    Serial.printf("right sensor: %i \n", analogRead(35));
-    Serial.printf("brake sensor: %i \n", analogRead(39));
+    // Serial.printf("currentState:%d \n", currentState);
+    // Serial.printf("PotentiometersAgree:%d \n", throttle.PotentiometersAgree());
+    // Serial.printf("to3V3orGND:%d \n", throttle.to3V3orGND());
+    // Serial.printf("driveButton:%d \n", driveButton);
+    // Serial.printf("brake_perc:%d \n", static_cast<uint8_t>(brake_perc));
+    // Serial.printf("accel_perc:%d \n", static_cast<uint8_t>(accel_perc));
+    // Serial.printf(
+    //     "torque request:%d \n",
+    //     throttle.GetThrottlePercent(
+    //         inverter.GetMotorTemperature(), battery_amperage_signal, battery_voltage_signal, inverter.GetRPM()));
+    // Serial.printf("left sensor: %i \n", analogRead(34));
+    // Serial.printf("right sensor: %i \n", analogRead(35));
+    // Serial.printf("brake sensor: %i \n", throttle.brakeaverage);
+    left_ADC = analogRead(34);
+    right_ADC = analogRead(35);
+    brake_ADC = analogRead(39);
 }
 
 void turnOn()
